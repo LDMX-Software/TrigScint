@@ -114,6 +114,19 @@ namespace ldmx {
     }
     auto numRecHits{0};
 
+    std::vector<std::vector< double > > 
+      crosstalk(stripsPerArray_,std::vector<double>(stripsPerArray_));
+
+    /// initiallizing matrix for controling cross-talk
+    for(int i = 0 ; i < stripsPerArray_-1 ; i++){
+       crosstalk[i+1][i] = 0.01;
+       crosstalk[i][i+1] = 0.01;
+       if( i < stripsPerArray_-2 ){
+	 crosstalk[i+2][i] = 0.01;
+	 crosstalk[i][i+2] = 0.01;
+       }
+    }
+
     // loop over sim hits and aggregate energy depositions for each detID
     const auto simHits{event.getCollection< SimCalorimeterHit >
 	(inputCollection_,inputPassName_)};
@@ -147,10 +160,27 @@ namespace ldmx {
 
       double PulseAmp =
 	random_->Poisson(simHit.getEdep() / mevPerMip_ * pePerMip_);
-      ex[id.bar()]->AddPulse(toff_overall_+simHit.getTime(),PulseAmp);
+
+      if (verbose_) 
+	std::cout << "bar ID: " << id.bar() << std::endl;
+       double divvy = 0.;
+      for(int i = 0 ; i < stripsPerArray_ ; i++ ){
+	if( i == id.bar() ) continue;
+	divvy+=crosstalk[id.bar()][i];
+	if ( verbose_ )
+	  std::cout << "channel " << i << " amplitude: " << PulseAmp*crosstalk[id.bar()][i] << std::endl;
+	ex[i]->AddPulse(toff_overall_+simHit.getTime(), 
+			PulseAmp*crosstalk[id.bar()][i] );
+      }
+      if( divvy > 1.0 ){
+	std::cout << "unitarity violation!!" << std::endl;
+	std::cout << "left over: " << (1-divvy) << std::endl;
+      }
+      ex[id.bar()]->AddPulse(toff_overall_+simHit.getTime(), PulseAmp*(1-divvy) );
+      
       TrueEdep[id.bar()]+=simHit.getEdep();
     }
-
+    
     // A container to hold the digitized trigger scintillator hits.
     std::vector<TrigScintQIEDigis> QDigis;
 
@@ -161,10 +191,10 @@ namespace ldmx {
 
       // Dark current simulation
       int n_noise_pulses = random_->Poisson(TotalNoise);
-      	for(int i=0;i<n_noise_pulses;i++) {
-      	  ex[bar_id]->AddPulse
-	    (random_->Uniform(0,maxts_*SamplingTime),1);
-      	}
+      for(int i=0;i<n_noise_pulses;i++) {
+	ex[bar_id]->AddPulse
+	  (random_->Uniform(0,maxts_*SamplingTime),1);
+      }
 
       // Storing the "good" digis
       if(smq->PulseCut(ex[bar_id])) {
