@@ -9,7 +9,6 @@
 #include <iostream>
 
 // ldmx
-#include "Recon/Event/EventConstants.h"
 #include "TrigScint/Event/TrigScintCluster.h"
 
 namespace trigscint {

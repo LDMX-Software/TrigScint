@@ -7,7 +7,6 @@
 #include <set>
 
 // ldmx-sw
-#include "Recon/Event/EventConstants.h"
 #include "TrigScint/Event/TrigScintHit.h"
 
 namespace trigscint {
