@@ -3,6 +3,7 @@
 #define EVENTPROC_TRIGSCINTTRACKPRODUCER_H
 
 // LDMX Framework
+#include "Framework/EventProcessor.h"
 #include "TrigScint/Event/TrigScintCluster.h"
 #include "TrigScint/Event/TrigScintTrack.h"
 

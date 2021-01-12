@@ -14,16 +14,11 @@
 
 // LDMX
 #include "DetDescr/TrigScintID.h"
-#include "TrigScint/Event/TrigScintHit.h"
+#include "Framework/EventProcessor.h"
 #include "SimCore/Event/SimCalorimeterHit.h"
 #include "Tools/NoiseGenerator.h"
 #include "TrigScint/Event/TrigScintHit.h"
-
-/*~~~~~~~~~~~~~~~*/
-/*   Framework   */
-/*~~~~~~~~~~~~~~~*/
-#include "Framework/Configure/Parameters.h"
-#include "Framework/EventProcessor.h"
+#include "TrigScint/Event/TrigScintHit.h"
 
 namespace trigscint {
 
