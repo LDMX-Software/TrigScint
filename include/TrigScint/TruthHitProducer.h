@@ -6,6 +6,7 @@
 /*   ldmx-sw   */
 /***************/
 
+#include "Framework/EventProcessor.h"
 #include "SimCore/Event/SimCalorimeterHit.h"
 #include "TrigScint/Event/TrigScintHit.h"
 

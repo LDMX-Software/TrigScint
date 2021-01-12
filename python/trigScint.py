@@ -17,7 +17,7 @@ class TrigScintDigiProducer(ldmxcfg.Producer) :
     """Configuration for digitizer for Trigger Scintillators"""
 
     def __init__(self,name) :
-        super().__init__(name,'TrigScintDigiProducer','TrigScint')
+        super().__init__(name,'trigscint::TrigScintDigiProducer','TrigScint')
 
         self.mean_noise = 0.02
         self.number_of_strips = 50
@@ -57,7 +57,7 @@ class TrigScintClusterProducer(ldmxcfg.Producer) :
     """Configuration for cluster producer for Trigger Scintillators"""
 
     def __init__(self,name) :
-        super().__init__(name,'TrigScintClusterProducer','TrigScint')
+        super().__init__(name,'trigscint::TrigScintClusterProducer','TrigScint')
 
         self.max_cluster_width = 2
         self.clustering_threshold = 0.  #to add in neighboring channels
