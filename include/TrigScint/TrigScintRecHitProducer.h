@@ -11,6 +11,8 @@
 /*   ROOT   */
 /*~~~~~~~~~~*/
 #include "TRandom3.h"
+#include "TLinearFitter.h"
+#include "TVectorD.h"
 
 // LDMX
 #include "DetDescr/TrigScintID.h"
@@ -55,6 +57,16 @@ class TrigScintRecHitProducer : public framework::Producer {
   void produce(framework::Event& event);
 
  private:
+  /**
+   * Reconstruct true charge deposited in each time sample
+   * @param adc array of adcs for give event, cell
+   * @param tdc array of tdcs for give event, cell
+   * @param sample_of_interest sample of interest
+   */
+  Double_t ChargeReconstruction(std::vector<int>adc
+                                ,std::vector<int>tdc
+                                ,int sample_of_interest=2);
+
   /// Class to set the verbosity level.
   // TODO: Make use of the global verbose parameter.
   bool verbose_{false};
@@ -82,8 +94,15 @@ class TrigScintRecHitProducer : public framework::Producer {
   /// Total number of photoelectrons per MIP
   double pePerMip_{13.5};
 
-  /// Total number of photoelectrons per MIP
+  /// Sample of interest
   int sample_of_interest_{2};
+
+  /**
+   * Energy Reconstruction option
+   * 0 -> Default. (summation of charges)
+   * 1 -> Pulse fitting over 5 ts
+   */
+  int En_Reco_Option_{0};
 };
 
 }  // namespace trigscint

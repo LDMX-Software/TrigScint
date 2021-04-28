@@ -120,6 +120,7 @@ class TrigScintRecHitProducer(ldmxcfg.Producer) :
         self.output_collection="trigScintRecHitsUp"
         self.verbose = False
         self.sample_of_interest=2 # Sample of interest. Range 0 to 3
+        self.En_Reco_Option = 0   # Toggle Energy reconstruction algorithm
 
     def up() : 
         """Get the rechit producer for upstream pad"""
