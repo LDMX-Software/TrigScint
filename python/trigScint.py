@@ -122,6 +122,10 @@ class TrigScintRecHitProducer(ldmxcfg.Producer) :
         self.sample_of_interest=2 # Sample of interest. Range 0 to 3
         self.En_Reco_Option = 0   # Toggle Energy reconstruction algorithm
 
+        self.input_pulse_shape="Expo" # Name of the input pulse class
+        self.expo_k=0.1          # Inverse of decay time of piece-wise exponential
+        self.expo_tmax=5.0       # Time at which piece-wise exponential peaks
+
     def up() : 
         """Get the rechit producer for upstream pad"""
         rechit = TrigScintRecHitProducer( 'trigScintRecHitsUp' )

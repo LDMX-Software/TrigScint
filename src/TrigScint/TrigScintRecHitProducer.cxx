@@ -25,6 +25,18 @@ void TrigScintRecHitProducer::configure(
   verbose_ = parameters.getParameter<bool>("verbose");
   sample_of_interest_ = parameters.getParameter<int>("sample_of_interest");
   En_Reco_Option_ = parameters.getParameter<int>("En_Reco_Option");
+
+  input_pulse_shape_ =
+      parameters.getParameter<std::string>("input_pulse_shape");
+  if (input_pulse_shape_ == "Expo") {
+    pulse_params_.clear();
+    pulse_params_.push_back(parameters.getParameter<double>("expo_k"));
+    pulse_params_.push_back(parameters.getParameter<double>("expo_tmax"));
+
+    ldmx_log(debug) << "expo_k =" << pulse_params_[0];
+    ldmx_log(debug) << "expo_tmax =" << pulse_params_[1];
+  }
+
 }
 
 void TrigScintRecHitProducer::produce(framework::Event &event) {

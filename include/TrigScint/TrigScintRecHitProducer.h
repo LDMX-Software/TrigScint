@@ -103,6 +103,12 @@ class TrigScintRecHitProducer : public framework::Producer {
    * 1 -> Pulse fitting over 5 ts
    */
   int En_Reco_Option_{0};
+
+  /// Input pulse shape for fitting
+  std::string input_pulse_shape_;
+
+  /// Input pulse parameters for fitting
+  std::vector<float> pulse_params_;
 };
 
 }  // namespace trigscint
