@@ -25,6 +25,8 @@ if(BUILD_EVENT_ONLY)
   # Generate the files needed to build the event classes.
   setup_library(module TrigScint name Event
                 dependencies ROOT::Core
+			     ROOT::Physics
+			     ROOT::Minuit
                              Hcal::Event
 			     TrigScint::Event
                              Recon::Event

@@ -120,7 +120,6 @@ class TrigScintRecHitProducer(ldmxcfg.Producer) :
         self.output_collection="trigScintRecHitsUp"
         self.verbose = False
         self.sample_of_interest=2 # Sample of interest. Range 0 to 3
-        self.En_Reco_Option = 0   # Toggle Energy reconstruction algorithm
 
         self.input_pulse_shape="Expo" # Name of the input pulse class
         self.expo_k=0.1          # Inverse of decay time of piece-wise exponential
@@ -143,6 +142,48 @@ class TrigScintRecHitProducer(ldmxcfg.Producer) :
     def tagger() : 
         """Get the rechit producer for tagger pad"""
         rechit = TrigScintRecHitProducer( 'trigScintRecHitsTag' )
+        rechit.input_collection  = 'trigScintQIEDigisTag'
+        rechit.output_collection = 'trigScintRecHitsTag'
+        return rechit
+
+class PulseFittingRecHitProducer(ldmxcfg.Producer) :
+    """Configuration for rechit producer for Trigger Scintillators"""
+
+    def __init__(self,name) :
+        super().__init__(name,'trigscint::PulseFittingRecHitProducer','TrigScint')
+
+        self .mev_per_mip = 0.4   #\
+                                  # >>>both are for converting edep to PEs 
+        self.pe_per_mip = 100.    #/
+        self.pedestal= 6.0        # QIE pedestal value (in fC)
+        self.gain = 1.e6      # SiPM Gain
+        self.input_collection="trigScintQIEDigisUp"
+        self.input_pass_name=""   #take any pass
+        self.output_collection="trigScintRecHitsUp"
+        self.verbose = False
+        self.sample_of_interest=2 # Sample of interest. Range 0 to 3
+
+        self.input_pulse_shape="Expo" # Name of the input pulse class
+        self.expo_k=0.1          # Inverse of decay time of piece-wise exponential
+        self.expo_tmax=5.0       # Time at which piece-wise exponential peaks
+
+    def up() : 
+        """Get the rechit producer for upstream pad"""
+        rechit = PulseFittingRecHitProducer( 'trigScintRecHitsUp' )
+        rechit.input_collection  = 'trigScintQIEDigisUp'
+        rechit.output_collection = 'trigScintRecHitsUp'
+        return rechit
+
+    def down() : 
+        """Get the rechit producer for downstream pad"""
+        rechit = PulseFittingRecHitProducer( 'trigScintRecHitsDown' )
+        rechit.input_collection  = 'trigScintQIEDigisDn'
+        rechit.output_collection = 'trigScintRecHitsDn'
+        return rechit
+
+    def tagger() :
+        """Get the rechit producer for tagger pad"""
+        rechit = PulseFittingRecHitProducer( 'trigScintRecHitsTag' )
         rechit.input_collection  = 'trigScintQIEDigisTag'
         rechit.output_collection = 'trigScintRecHitsTag'
         return rechit
