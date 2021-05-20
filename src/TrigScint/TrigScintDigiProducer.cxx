@@ -25,8 +25,9 @@ void TrigScintDigiProducer::configure(
   outputCollection_ = parameters.getParameter<std::string>("output_collection");
   verbose_ = parameters.getParameter<bool>("verbose");
 
-  random_ =
-      std::make_unique<TRandom3>(parameters.getParameter<int>("randomSeed"));
+  const auto& rseed2 = getCondition<framework::RandomNumberSeedService>(
+        framework::RandomNumberSeedService::CONDITIONS_OBJECT_NAME);
+  random_ = std::make_unique<TRandom3>(rseed2.getSeed(outputCollection_));
 
   noiseGenerator_ = std::make_unique<ldmx::NoiseGenerator>(meanNoise_, false);
   noiseGenerator_->setNoiseThreshold(1);
