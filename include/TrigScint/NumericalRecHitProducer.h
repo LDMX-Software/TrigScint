@@ -55,6 +55,16 @@ class NumericalRecHitProducer : public framework::Producer {
 
   void produce(framework::Event& event);
 
+  /**
+   * Const function for pulse fitting
+   * @param params an array of 2 elements specifying
+   * pulse arrival time and pulse amplitude (Total integral)
+   */
+  double CostFunction(const double* params);
+
+  /// QIE Sampling frequency (in MHz)
+  float qie_sf_{40.};
+
  private:
   /**
    * Reconstruct true charge deposited in each time sample
@@ -66,24 +76,14 @@ class NumericalRecHitProducer : public framework::Producer {
                                 ,std::vector<int>tdc
                                 ,int sample=2);
 
-  /**
-   * Const function for pulse fitting
-   * @param params an array of 2 elements specifying
-   * pulse arrival time and pulse amplitude (Total integral)
-   */
-  double CostFunction(double* params);
-
-  /// Linearized charge. (Will be updated for every bar)
+  /// Linearized charge. (Will be updated every time sample)
   double Qm{0};
   
-  /// Time of crossing tdc threshold (Will be updated for every bar)
+  /// Time of crossing tdc threshold (Will be updated every time sample)
   double tm{0};
 
   /// QIE TDC Current threshold
   float tdc_thr_;
-
-  /// QIE Sampling frequency (in MHz)
-  float qie_sf_{40.};
 
   /// Class to set the verbosity level.
   // TODO: Make use of the global verbose parameter.
@@ -105,6 +105,9 @@ class NumericalRecHitProducer : public framework::Producer {
 
   /// QIE pedestal
   double pedestal_{6.0};
+
+  /// QIE pedestal
+  double noise_{1.5};
 
   /// Total MeV per MIP
   double mevPerMip_{1.40};

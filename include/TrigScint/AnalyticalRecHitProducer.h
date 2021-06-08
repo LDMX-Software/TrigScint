@@ -94,6 +94,9 @@ class AnalyticalRecHitProducer : public framework::Producer {
   /// QIE pedestal
   double pedestal_{6.0};
 
+  /// QIE pedestal
+  double noise_{1.5};
+
   /// Total MeV per MIP
   double mevPerMip_{1.40};
 

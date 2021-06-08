@@ -156,6 +156,7 @@ class AnalyticalRecHitProducer(ldmxcfg.Producer) :
                                   # >>>both are for converting edep to PEs 
         self.pe_per_mip = 100.    #/
         self.pedestal= 6.0        # QIE pedestal value (in fC)
+        self.elec_noise = 1.5     # QIE Electronic noise (in fC)
         self.gain = 1.e6      # SiPM Gain
         self.input_collection="trigScintQIEDigisUp"
         self.input_pass_name=""   #take any pass
@@ -228,6 +229,51 @@ class PulseFittingRecHitProducer(ldmxcfg.Producer) :
     def tagger() :
         """Get the rechit producer for tagger pad"""
         rechit = PulseFittingRecHitProducer( 'trigScintRecHitsTag' )
+        rechit.input_collection  = 'trigScintQIEDigisTag'
+        rechit.output_collection = 'trigScintRecHitsTag'
+        return rechit
+
+class NumericalRecHitProducer(ldmxcfg.Producer) :
+    """Configuration for rechit producer for Trigger Scintillators"""
+
+    def __init__(self,name) :
+        super().__init__(name,'trigscint::NumericalRecHitProducer','TrigScint')
+
+        self .mev_per_mip = 0.4   #\
+                                  # >>>both are for converting edep to PEs 
+        self.pe_per_mip = 100.    #/
+        self.pedestal= 6.0        # QIE pedestal value (in fC)
+        self.elec_noise = 1.5     # QIE Electronic noise (in fC)
+        self.gain = 1.e6      # SiPM Gain
+        self.input_collection="trigScintQIEDigisUp"
+        self.input_pass_name=""   #take any pass
+        self.output_collection="trigScintRecHitsUp"
+        self.verbose = False
+        self.sample_of_interest=2 # Sample of interest. Range 0 to 3
+
+        self.input_pulse_shape="Expo" # Name of the input pulse class
+        self.expo_k=0.1          # Inverse of decay time of piece-wise exponential
+        self.expo_tmax=5.0       # Time at which piece-wise exponential peaks
+        self.tdc_thr = 3.4       # Threshold current in uA for TDC latch (as used by QIE)
+        self.qie_sf = 40.        # QIE sampling frequency in MHz
+
+    def up() : 
+        """Get the rechit producer for upstream pad"""
+        rechit = NumericalRecHitProducer( 'trigScintRecHitsUp' )
+        rechit.input_collection  = 'trigScintQIEDigisUp'
+        rechit.output_collection = 'trigScintRecHitsUp'
+        return rechit
+
+    def down() : 
+        """Get the rechit producer for downstream pad"""
+        rechit = NumericalRecHitProducer( 'trigScintRecHitsDown' )
+        rechit.input_collection  = 'trigScintQIEDigisDn'
+        rechit.output_collection = 'trigScintRecHitsDn'
+        return rechit
+
+    def tagger() :
+        """Get the rechit producer for tagger pad"""
+        rechit = NumericalRecHitProducer( 'trigScintRecHitsTag' )
         rechit.input_collection  = 'trigScintQIEDigisTag'
         rechit.output_collection = 'trigScintRecHitsTag'
         return rechit

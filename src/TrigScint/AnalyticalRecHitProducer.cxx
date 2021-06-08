@@ -19,6 +19,7 @@ void AnalyticalRecHitProducer::configure(
     framework::config::Parameters &parameters) {
   // Configure this instance of the producer
   pedestal_ = parameters.getParameter<double>("pedestal");
+  noise_ = parameters.getParameter<double>("elec_noise");
   gain_ = parameters.getParameter<double>("gain");
   mevPerMip_ = parameters.getParameter<double>("mev_per_mip");
   pePerMip_ = parameters.getParameter<double>("pe_per_mip");
@@ -80,9 +81,9 @@ void AnalyticalRecHitProducer::produce(framework::Event &event) {
       ChargeReconstruction(adc,tdc,sample_of_interest_);
 
     hit.setAmplitude(Charge);
-    hit.setEnergy((Charge - pedestal_) * 6250. /
+    hit.setEnergy(Charge * 6250. /
 		  gain_ * mevPerMip_ / pePerMip_);  // MeV
-    hit.setPE((Charge - pedestal_) * 6250. /gain_);
+    hit.setPE(Charge * 6250. /gain_);
     trigScintHits.push_back(hit);
   }
   // Create the container to hold the
@@ -103,16 +104,18 @@ void AnalyticalRecHitProducer::produce(framework::Event &event) {
     SimQIE qie;
     auto pulse = new Expo(k_,tmax_);
     
-    for(int i=0;i<tdc.size();i++) {
+  if(tdc[sample]==63) return(0); // no signal pulse
+
+  for(int i=0;i<tdc.size();i++) {
       Qdata[i] = qie.ADC2Q(adc[i]);
       if(tdc[i]<40) {
 	if(i==sample)
 	  poi=npulses;
 	auto tm = tdc[i]/2;	// measured time
-	auto Qm = qie.ADC2Q(adc[i])-
+	auto Qm = Qdata[i]-
 	  pulse->Integrate(tend*i,tend*(i+1))-
 	  pedestal_; // measured charge
-	if(Qm<0)
+	if(Qm<2*noise_)
 	  Qm=0;
 	float Qreco =
 	  (par0*tdc_thr_*tmax_*exp(k_*tm)-Qm)/(par0*exp(k_*tm)-1);
@@ -151,11 +154,11 @@ void AnalyticalRecHitProducer::produce(framework::Event &event) {
 
     std::cout<<"\n---------------------------------------------"
 	     <<"--------------------------------------------";
-    // for(int n = 0;n<npulses;n++){
-    //   std::cout<<std::setw(10)<<"\nPulse"<<n<<"\t|";
-    // for(int i=0;i<5;i++)
-    // 	std::cout<<std::setw(10)<<params(1+n)*Qdep[n*5+i]<<"\t|";
-    // }
+    for(int n = 0;n<npulses;n++){
+      std::cout<<std::setw(10)<<"\nPulse"<<n<<"\t|";
+    for(int i=0;i<5;i++)
+    	std::cout<<std::setw(10)<<pulse->Integrate(i*tend,(i+1)*tend)<<"\t|";
+    }
     
     std::cout<<"\n"
 	     <<"\nnpulses = "<<npulses<<std::endl
@@ -170,8 +173,8 @@ void AnalyticalRecHitProducer::produce(framework::Event &event) {
     std::cout<<"Charge_[]: ";
     for(int i=0;i<Charge_.size();i++)
       std::cout<<std::setw(10)<<Charge_[i]<<"\t|";
-  }
-  std::cout<<"\n";
+    std::cout<<"\n";
+  } 
 
   return Charge_[poi];
 }
