@@ -201,7 +201,8 @@ void NumericalRecHitProducer::configure(
 
     /////////////// For Debigging purposes
     // if(verbose_ || pred[2*poi+1]<0) {
-    if(verbose_ || pred[2*poi+1]*6250./gain_ * mevPerMip_ / pePerMip_> 1.6) {
+    // if(verbose_ || pred[2*poi+1]*6250./gain_ * mevPerMip_ / pePerMip_> 1.6) {
+    if(verbose_){
       std::cout<<"TS \t|\t0\t|\t1\t|\t2\t|\t3\t|\t4\t|\n"
 	       <<"---------------------------------------------"
 	       <<"--------------------------------------------\n"
