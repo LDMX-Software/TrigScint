@@ -1,0 +1,5 @@
+#include "Recon/Event/HgcrocTrigDigi.h"
+#include "Recon/Event/HgcrocDigiCollection.h"
+#include "Recon/Event/CalorimeterHit.h"
+#include "Recon/Event/EventConstants.h"
+#include "Recon/Event/TriggerResult.h"
