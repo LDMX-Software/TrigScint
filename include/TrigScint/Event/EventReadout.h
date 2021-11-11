@@ -51,7 +51,7 @@ class EventReadout : public trigscint::TrigScintQIEDigis {
 
   /// Get the pedestal
   
-  int getPedestal() const { return pedestal_; }
+  float getPedestal() const { return pedestal_; }
 
     /**
    * Set channel (linearized, charge-equiv) noise 
@@ -62,7 +62,7 @@ class EventReadout : public trigscint::TrigScintQIEDigis {
 
   /// Get the channel noise
 
-  int getNoise() const { return noise_; }
+  float getNoise() const { return noise_; }
 
   /**
    * Store charges of all time samples
@@ -84,7 +84,7 @@ class EventReadout : public trigscint::TrigScintQIEDigis {
 
   /// Get the channel avgQ
 
-  int getAvgQ() const { return avgQ_; }
+  float getAvgQ() const { return avgQ_; }
 
     /**
    * Set channel (linearized, charge-equiv) minimum charge 
@@ -95,7 +95,7 @@ class EventReadout : public trigscint::TrigScintQIEDigis {
 
   /// Get the channel minQ
 
-  int getMinQ() const { return minQ_; }
+  float getMinQ() const { return minQ_; }
 
     /**
    * Set channel (linearized, charge-equiv) maximum charge 
@@ -106,7 +106,7 @@ class EventReadout : public trigscint::TrigScintQIEDigis {
 
   /// Get the channel maxQ
 
-  int getMaxQ() const { return maxQ_; }
+  float getMaxQ() const { return maxQ_; }
 
     /**
    * Set channel (linearized, charge-equiv) median charge 
@@ -117,7 +117,7 @@ class EventReadout : public trigscint::TrigScintQIEDigis {
 
   /// Get the channel medQ
 
-  int getMedQ() const { return medQ_; }
+  float getMedQ() const { return medQ_; }
 
   /**
    * A dummy operator overloading
