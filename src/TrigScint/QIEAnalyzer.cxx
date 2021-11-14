@@ -45,7 +45,20 @@ namespace trigscint {
       AvgQs[bar] = chan.getAvgQ();
       float qTot = 0;
       int firstT = -1;
-
+      for (int iT = 0; iT < q.size() ; iT++) {
+	ldmx_log(debug) << "in event " << evNb << "; channel " << bar << ", got charge[" << iT << "] = " << q.at(iT);
+	if ( evNb < nEv && bar < nChannels ) //stick within the predefined histogram array
+	  hOut[evNb][bar]->Fill(iT, q.at(iT));
+	if ( q.at(iT) > 2*fabs(peds_[ bar ]) ) 	{ //integrate all charge well above ped to convert to a PE count
+	  qTot+=q.at(iT);
+	  if (firstT =-1) //keep track of first time sample above threshold
+	    firstT=iT;
+	}//if above threshold
+      }//over time samples
+      float PE = qTot*6250./4.e6;
+      hPE[ bar ]->Fill( PE );
+      hPEvsT[ bar ]->Fill( firstT, PE );
+	  
       if(chan.getAvgQ()>100)
 	for(int ts=0;ts<AllQs[bar].size();ts++)
 	  PulseShape->Fill(ts,AllQs[bar][ts]);
@@ -120,11 +133,35 @@ namespace trigscint {
 
     getHistoDirectory();
 
+    /*
+      int yMax = 50;
+      int yMin = -yMax;
+      int nBinsY = (yMax-yMin)/1; //1 mm resolution
+      //    
+      hSimYEvnb = new TH2F("hSimYEvnb","Beam electron y for each event;Event number;y",nEv,0,nEv, nBinsY,yMin,yMax);
+      hSimIDEvnb = new TH2F("hSimIDEvnb","Beam electron y converted to channel ID, for each event;Event number;ID",nEv,0,nEv, nBinsY,convertToID(yMin),convertToID(yMax));
+      hIdEvnb = new TH2F("hIdEvnb","Id track vs event, filled with N_{PE};Event;Channel ID;N_{PE}", nEv,0,nEv, nChannels+2,0,nChannels+2);
+      hId=new TH1F("hId","channel id;Channel ID", nChannels,0,nChannels);
+      hNtracksEvnb=new TH1F("hNtracksEvnb","N_tracks for each event;Event;N_{tracks}", nEv,0,nEv);
+      hNtracks=new TH1F("hNtracks","N_tracks per event;Event;N_{tracks}", nTrkMax,0,nTrkMax);
+      hFindableTracks=new TH1F("hFindableTracks","N_findableTracks per event;Event;N_{tracks}^{findable}", nTrkMax,0,nTrkMax);
+      hTrackMatrix=new TH2F("hTrackMatrix","Found vs findable tracks per event;N_{tracks}^{findable};N_{tracks}", nTrkMax,-0.5,nTrkMax-0.5, nTrkMax,-0.5,nTrkMax-0.5);
+      hNhits=new TH1F("hNhits","Nhits in a track;Track width [channel Nb];N_{tracks}", 60, 0, 6);
+    */
     int nTimeSamp=40;
+    for (int iE = 0; iE<nEv; iE++) {
+      for (int iB = 0; iB<nChannels; iB++) { 
+	//TH1F * hOut = new TH1F(Form("hCharge_chan%i_ev%i", iB, iE), Form(";time sample; Q, channel %i, event %i [fC]", iB, iE), nTimeSamp, -0.5, nTimeSamp-0.5);
+	hOut[iE][iB] = new TH1F(Form("hCharge_chan%i_ev%i", iB, iE), Form(";time sample; Q, channel %i, event %i [fC]", iB, iE), nTimeSamp,-0.5,nTimeSamp-0.5);
+      }
+    }
     int PEmax=500;
     int Qmax=3.5e5;
-
-    // hQ15Phot1 = new TH1F("hQ15Phot1","Single photon events charge statistics;Q [fC];",520,-20,500);
+    for (int iB = 0; iB<nChannels; iB++) {
+      hPE[iB]=new TH1F(Form("hPE_chan%i", iB), Form(";PE, chan%i", iB),5*PEmax,0,PEmax);
+      hPEvsT[iB]=new TH2F(Form("hPEvsT_chan%i", iB), Form(";First time sample above summing threshold;PE, chan%i", iB),nTimeSamp+1,-1.5,nTimeSamp-0.5, 5*PEmax,0,PEmax);
+    }
+    
     hQ15Phot1 = new TH1F("hQ15Phot1","Single photon events charge statistics;Q [fC];",43,-16,500);
 
     for (int i=0;i<100;i++)

@@ -69,6 +69,10 @@ namespace trigscint {
     int nTrkMax{100};
 
     //match nev, nchan above
+    TH1F* hOut[200][16];;
+    TH1F* hPE[16];
+    TH2F* hPEvsT[16];
+
     TH2F* hAvgQiQj[nChannels*(nChannels-1)/2]; // Integrated charge correlation plots
     TH2F* hQiQj[nChannels*(nChannels-1)/2]; // charge correlation plots
     TH2F* hQiQj_ts[nChannels*(nChannels-1)/2][maxTS]; // charge correlation plots per time sample
