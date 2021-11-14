@@ -62,20 +62,27 @@ namespace trigscint {
     std::vector<double> peds_;
 
     int evNb;
-    //    const
-    static const int maxTS{30};
+    // const
+    static const int maxTS{30};	// Maximum time samples recorded per channel
     static const int nEv{1000};
-    static const int nChannels{16};
+    static const int nChannels{16}; // No. of channels available
     int nTrkMax{100};
 
     //match nev, nchan above
     TH2F* hAvgQiQj[nChannels*(nChannels-1)/2]; // Integrated charge correlation plots
     TH2F* hQiQj[nChannels*(nChannels-1)/2]; // charge correlation plots
     TH2F* hQiQj_ts[nChannels*(nChannels-1)/2][maxTS]; // charge correlation plots per time sample
-
-    // // For correlation matrix
-    // std::vector<Double_t> Qi[nChannels][maxTS];
-
+    TH2F* PulseShape;				      // Pulse shape in the high charge event
+    TH1F* Rel_Dev;				      // Relative deviation in charge deposition
+    TH2F* Abs_Dev;				      // Absoulte deviation w.r.t. median
+    TH2F* hGoodPulses;	// Pulse shapes with Qmed<300
+    TH1F* AllNoise;	// Charge in 1st 15 ts
+    TH1F* hQAvg15;	// Average Q in 1dt 15 ts
+    
+    TH1F* hPhot1Pulse[100];	// per event pulse shape
+    int photcount{0};		// No. of single photon events passed
+    TH1F* hQ15Phot1;		// charge distribution in single photon event
+    
     double yOffset_{35.};
     double yToIDfactor_{50./80.};
 
