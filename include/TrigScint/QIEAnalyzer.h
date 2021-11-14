@@ -13,6 +13,7 @@
 #include "TrigScint/Event/EventReadout.h"
 #include "TH1.h"
 #include "TH2.h"
+#include "TGraph.h"
 
 namespace trigscint {
 
@@ -23,17 +24,17 @@ namespace trigscint {
   class QIEAnalyzer : public framework::Analyzer {
   public:
 
-	QIEAnalyzer(const std::string& name, framework::Process& process); // : framework::Analyzer(name, process) {}
-	virtual ~QIEAnalyzer();
+    QIEAnalyzer(const std::string& name, framework::Process& process); // : framework::Analyzer(name, process) {}
+    virtual ~QIEAnalyzer();
     virtual void configure(framework::config::Parameters &parameters);
 
     virtual void analyze(const framework::Event &event) final override;
 
-	//
-	virtual void onFileOpen();
+    //
+    virtual void onFileOpen();
 
-	//
-	virtual void onFileClose();
+    //
+    virtual void onFileClose();
 
     virtual void onProcessStart() final override;
 
@@ -43,7 +44,7 @@ namespace trigscint {
 
   private:
 
-	std::vector <std::vector <TH1F*> > vChargeVsTime;
+    std::vector <std::vector <TH1F*> > vChargeVsTime;
 	
     // 
     // TH1* hId;
@@ -58,19 +59,34 @@ namespace trigscint {
 	
     std::string inputCol_;
     std::string inputPassName_{""};
-	std::vector<double> peds_;
+    std::vector<double> peds_;
 
-	int evNb;
-    //    const 
-    int nEv{200};
-    int nChannels{16};
+    int evNb;
+    // const
+    static const int maxTS{30};	// Maximum time samples recorded per channel
+    static const int nEv{1000};
+    static const int nChannels{16}; // No. of channels available
     int nTrkMax{100};
 
-	//match nev, nchan above
-	TH1F* hOut[200][16];;
-	TH1F* hPE[16];
-	TH2F* hPEvsT[16];
-	
+    //match nev, nchan above
+    TH1F* hOut[200][16];;
+    TH1F* hPE[16];
+    TH2F* hPEvsT[16];
+
+    TH2F* hAvgQiQj[nChannels*(nChannels-1)/2]; // Integrated charge correlation plots
+    TH2F* hQiQj[nChannels*(nChannels-1)/2]; // charge correlation plots
+    TH2F* hQiQj_ts[nChannels*(nChannels-1)/2][maxTS]; // charge correlation plots per time sample
+    TH2F* PulseShape;				      // Pulse shape in the high charge event
+    TH1F* Rel_Dev;				      // Relative deviation in charge deposition
+    TH2F* Abs_Dev;				      // Absoulte deviation w.r.t. median
+    TH2F* hGoodPulses;	// Pulse shapes with Qmed<300
+    TH1F* AllNoise;	// Charge in 1st 15 ts
+    TH1F* hQAvg15;	// Average Q in 1dt 15 ts
+    
+    TH1F* hPhot1Pulse[100];	// per event pulse shape
+    int photcount{0};		// No. of single photon events passed
+    TH1F* hQ15Phot1;		// charge distribution in single photon event
+    
     double yOffset_{35.};
     double yToIDfactor_{50./80.};
 

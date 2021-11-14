@@ -210,13 +210,15 @@ class TrigScintTrackProducer(ldmxcfg.Producer) :
 trigScintTrack = TrigScintTrackProducer( "trigScintTrack" )
 
 class QIEAnalyzer(ldmxcfg.Analyzer) :
-    """Configuration for linearized QIE analyzer for Trigger Scintillators"""
+    """
+    Configuration for linearized QIE analyzer for Trigger Scintillators
+    """
     
     def __init__(self,name) :
         super().__init__(name,'trigscint::QIEAnalyzer','TrigScint')
 
         self.inputCollection="QIEsamplesUp"
-        self.inputPassName=""   #take any pass                                                                                         
+        self.inputPassName=""   #take any pass
         self.pedestals=[ 0.6,
                          4.4,
                          -1.25,
