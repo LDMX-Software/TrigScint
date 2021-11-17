@@ -11,9 +11,12 @@
 #include "Framework/Configure/Parameters.h"
 #include "Framework/EventProcessor.h" //Needed to declare processor
 #include "TrigScint/Event/EventReadout.h"
+#include "TrigScint/QIEInputPulse.h"
+#include "TrigScint/SimQIE.h"
 #include "TH1.h"
 #include "TH2.h"
 #include "TGraph.h"
+#include "QIEInputPulse.h"
 
 namespace trigscint {
 
@@ -42,9 +45,35 @@ namespace trigscint {
 
     float convertToID( float yVal ) { return (yVal+yOffset_)*yToIDfactor_; }
 
+    // /*
+    //  * Integrated charge given by configurable pulse shape
+    //  * @par ts time sample to be evaluated
+    //  * @par par array of parameters of the pulse.
+    //  * par[0] = Total integral of the pulse (Q0)
+    //  * par[1] = start time of the pulse (t0)
+    //  * par[2] = 1/RC time constant (k)
+    //  * par[3] = time when pulse attains maximum (tmax)
+    //  * par[4] = pedestal
+    //  */
+    // Double_t SinglePulseShape(Double_t ts, Double_t* par);
+
+    // /// array of integers 0,1,2,..,maxTS-1
+    // float* time;
+    /// array of zeroes
+    float* zeroes;
+
+    // const
+    static const int maxTS{30};	// Maximum time samples recorded per channel
+    static const int nEv{200};
+    static const int nChannels{16}; // No. of channels available
+    
+    // // Temporarily store charge per time sample
+    // float charge[maxTS];
+
   private:
 
     std::vector <std::vector <TH1F*> > vChargeVsTime;
+    SimQIE* smq;
 	
     // 
     // TH1* hId;
@@ -63,15 +92,12 @@ namespace trigscint {
 
     int evNb;
     // const
-    static const int maxTS{30};	// Maximum time samples recorded per channel
-    static const int nEv{1000};
-    static const int nChannels{16}; // No. of channels available
     int nTrkMax{100};
 
     //match nev, nchan above
-    TH1F* hOut[200][16];;
-    TH1F* hPE[16];
-    TH2F* hPEvsT[16];
+    TH1F* hOut[nEv][nChannels];;
+    TH1F* hPE[nChannels];
+    TH2F* hPEvsT[nChannels];
 
     TH2F* hAvgQiQj[nChannels*(nChannels-1)/2]; // Integrated charge correlation plots
     TH2F* hQiQj[nChannels*(nChannels-1)/2]; // charge correlation plots
@@ -81,12 +107,23 @@ namespace trigscint {
     TH2F* Abs_Dev;				      // Absoulte deviation w.r.t. median
     TH2F* hGoodPulses;	// Pulse shapes with Qmed<300
     TH1F* AllNoise;	// Charge in 1st 15 ts
-    TH1F* hQAvg15;	// Average Q in 1dt 15 ts
+    TH1F* Q15_weighted;	// Charge in 1st 15 ts, weighted by sensitivity
+    TH1F* hQAvg15;	// Average Q in 1st 15 ts
+    TH1F* hQAvg1530;	// Average Q in last 15 ts
     
     TH1F* hPhot1Pulse[100];	// per event pulse shape
     int photcount{0};		// No. of single photon events passed
     TH1F* hQ15Phot1;		// charge distribution in single photon event
-    
+    TH2F* AllPulses;
+
+    // Single-PE fitting
+    TH1F* hPhot1Q0;
+    TH1F* hPhot1T0;
+    TH1F* hPhot1K;
+    TH1F* hPhot1TMax;
+    TH1F* hPhot1Ped;
+    TH1F* hPhot1Chi;
+
     double yOffset_{35.};
     double yToIDfactor_{50./80.};
 
