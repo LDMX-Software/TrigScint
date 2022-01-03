@@ -29,6 +29,7 @@ namespace trigscint {
    * par[4] = pedestal                                  
    */
   Double_t SinglePulseShape(Double_t* ts, Double_t* par);
+  void GuessPar(TF1* ff, float* charge,int max_id);
 
   // Temporarily store charge per time sample
   float charge[15];
@@ -162,112 +163,117 @@ namespace trigscint {
 	  GoodPhot1Event |= (AllQs[bar][ts]>190);
 	
 	if(GoodPhot1Event){
+	  if(photcount == 3000) return;
+	  
 	  for(int ts=0;ts<15;ts++)
 	    hQ15Phot1->Fill(AllQs[bar][ts]);
 	  
 	  // if(GoodPhot1Event && (photcount<100)) {
 	  // if(GoodPhot1Event) {
 	  
-	    // // // Fit pulse to single-PE events
-	    // // for(int i=0;i<15;i++)
-	    // //   charge[i] = AllQs[bar][i];
-	    // // auto min = ROOT::Math::Factory::CreateMinimizer("Minuit","Migrad");
-	    // // ROOT::Math::Functor f(&CostFunction,6);
-	    // // min->SetFunction(f);
+	    // // Fit pulse to single-PE events
+	    // for(int i=0;i<15;i++)
+	    //   charge[i] = AllQs[bar][i];
+	    // auto min = ROOT::Math::Factory::CreateMinimizer("Minuit","Migrad");
+	    // ROOT::Math::Functor f(&CostFunction,6);
+	    // min->SetFunction(f);
 
-	    // // // double temp_pars[6]={400,30,0.01,20.,10,0};
-	    // // // std::cout<<CostFunction(temp_pars)<<std::endl;
-	    // // min->SetMaxFunctionCalls(1000000); // for Minuit/Minuit2 
-	    // // // min->SetMaxIterations(10000);  // for GSL
-	    // // min->SetMaxIterations(10);  // for GSL
-	    // // min->SetTolerance(0.001);
+	    // // double temp_pars[6]={400,30,0.01,20.,10,0};
+	    // // std::cout<<CostFunction(temp_pars)<<std::endl;
+	    // min->SetMaxFunctionCalls(1000000); // for Minuit/Minuit2 
+	    // // min->SetMaxIterations(10000);  // for GSL
+	    // min->SetMaxIterations(10);  // for GSL
+	    // min->SetTolerance(0.001);
 
-	    // // min->SetVariable(0,"Q0",400.0,1.0);
-	    // // min->SetVariable(1,"T0",200.,0.1); // T0
-	    // // min->SetVariable(2,"K",0.001,0.0001); // K
-	    // // min->SetVariable(3,"TMax",30,0.01); // TMax
-	    // // min->SetVariable(4,"Pedestal",0.,0.01); // Pedestal
-	    // // min->SetVariable(5,"Noise",0.,0.001); // Noise
+	    // min->SetVariable(0,"Q0",400.0,1.0);
+	    // min->SetVariable(1,"T0",200.,0.1); // T0
+	    // min->SetVariable(2,"K",0.001,0.0001); // K
+	    // min->SetVariable(3,"TMax",30,0.01); // TMax
+	    // min->SetVariable(4,"Pedestal",0.,0.01); // Pedestal
+	    // min->SetVariable(5,"Noise",0.,0.001); // Noise
 	    
-	    // // min->PrintResults();
-	    // // min->Minimize();
-	    // // min->SetPrintLevel(1);
-	    // // min->PrintResults();
+	    // min->PrintResults();
+	    // min->Minimize();
+	    // min->SetPrintLevel(1);
+	    // min->PrintResults();
 	    
 	    // auto tg = new TGraph(6);
-	    // // auto tg = new TGraph(15,time,&AllQs[bar][0]);
-	    // // TGraphErrors* tg = new TGraphErrors(maxTS,time,&AllQs[bar][0],zeroes,&QErr[bar][0]);
+	    // auto tg = new TGraph(15,time,&AllQs[bar][0]);
+	    // TGraphErrors* tg = new TGraphErrors(maxTS,time,&AllQs[bar][0],zeroes,&QErr[bar][0]);
+	    TGraphErrors* tg = new TGraphErrors(maxTS,time,&AllQs[bar][0],0,&QErr[bar][0]);
 
-	    // // Find maximum of pulse
-	    // int t1 = 0;		// First time sample to consider
-	    // int t2 = 14;	// Last tim sample to consider
-	    // float QMax15=AllQs[bar][0]; // Pulse maximum
+	    // Find maximum of pulse
+	    int t1 = 0;		// First time sample to consider
+	    int t2 = 14;	// Last tim sample to consider
+	    float QMax15=AllQs[bar][0]; // Pulse maximum
 	    
-	    // for(int i=1;i<12;i++) {
-	    //   if(AllQs[bar][i]>QMax15) {
-	    // 	QMax15 = AllQs[bar][i];
-	    // 	t1 = i-1;
-	    // 	t2 = i+4;
-	    //   }
-	    // }
+	    for(int i=1;i<12;i++) {
+	      if(AllQs[bar][i]>QMax15) {
+	    	QMax15 = AllQs[bar][i];
+	    	t1 = i-1;
+	    	t2 = i+4;
+	      }
+	    }
 
 	    // for(int i=t1;i<=t2;i++){
 	    //   tg->SetPoint(i-t1,time[i],AllQs[bar][i]);
 	    // }
-	    // TCanvas* tc = new TCanvas(Form("c_evt_%i",photcount),"bb",800,600);
-	    // tg->Draw("AP");
-	    // tg->SetMarkerStyle(21);
-	    // // TF1* func = new TF1("myfunc",SinglePulseShape,0,15,5);
-	    // // TF1* func = new TF1("myfunc",SinglePulseShape,t1,t2,5);
-	    // // TF1* func = new TF1("myfunc",SinglePulseShape,25*t1-1,25*t2+1,5);
-	    // TF1* func = new TF1("myfunc",SinglePulseShape,0,375,5);
+	  
+	    TCanvas* tc = new TCanvas(Form("c_evt_%i",photcount),"bb",800,600);
+	    tg->Draw("AP");
+	    tg->SetMarkerStyle(21);
+	    // TF1* func = new TF1("myfunc",SinglePulseShape,0,15,5);
+	    // TF1* func = new TF1("myfunc",SinglePulseShape,t1,t2,5);
+	    // TF1* func = new TF1("myfunc",SinglePulseShape,25*t1-1,25*t2+1,5);
+	    TF1* func = new TF1("myfunc",SinglePulseShape,0,380,5);
 	    // func->SetParNames("Q0","T0","K","TMax","Ped");
 	    // printf("photcount = %d\n",photcount);
+	    GuessPar(func, &AllQs[bar][0],t1+1);
 	    
-	    // // func->SetParameter(0,530); // Q0
-	    // // func->SetParameter(1,50);   // T0
-	    // // func->SetParameter(2,0.03); // K
-	    // // func->SetParameter(3,20.0);	// TMax
-	    // // func->SetParameter(4,1.0);	// Ped
+	    // func->SetParameter(0,530); // Q0
+	    // func->SetParameter(1,50);   // T0
+	    // func->SetParameter(2,0.03); // K
+	    // func->SetParameter(3,20.0);	// TMax
+	    // func->SetParameter(4,1.0);	// Ped
 	    
-	    // // func->SetParameters(400,200,0.001,20,1.0);
+	    // func->SetParameters(400,200,0.001,20,1.0);
 	    // func->SetParameters(2*QMax15,25*t1-5,0.001,40,1.0);
 
-	    // // func->SetParameter(0,500); // Q0
-	    // // func->SetParameter(1,6);   // T0
-	    // // func->SetParameter(2,0.03); // K
-	    // // func->SetParameter(3,1);	// TMax
-	    // // func->SetParameter(4,10);	// Ped
+	    // func->SetParameter(0,500); // Q0
+	    // func->SetParameter(1,6);   // T0
+	    // func->SetParameter(2,0.03); // K
+	    // func->SetParameter(3,1);	// TMax
+	    // func->SetParameter(4,10);	// Ped
 
-	    // // tg->Fit(func,"MR");
-	    // // tg->Fit(func,"","",25*t1-1,25*t2+1);
-	    // tg->Fit(func);
+	    // tg->Fit(func,"MR");
+	    // tg->Fit(func,"","",25*t1-1,25*t2+1);
+	    tg->Fit(func,"NMEQ");
 	    
 	    // tc->SaveAs(Form("PhotFit_%i.png",photcount));
 	    // tc->SaveAs("hahalol.png");
-	    // delete tc;
+	    delete tc;
 
-	    // // /// Debugging
-	    // // Double_t pars[5] = {func->GetParameter(0),
-	    // // 			func->GetParameter(1),
-	    // // 			func->GetParameter(2),
-	    // // 			func->GetParameter(3),
-	    // // 			func->GetParameter(4)
-	    // // };
-	    // // for(int i=0;i<15;i++) {
-	    // //   // Double_t *x,*y;
-	    // //   // tg->GetPoint(i,x,y);
-	    // //   Double_t ii = i;
-	    // //   printf("i=%d\tx=%f\ty=%f\tdata=%f\tpred=%f\n",i,tg->GetPointX(i),tg->GetPointY(i),AllQs[bar][i],SinglePulseShape(&ii,pars));
-	    // // }
-	    // // ///
+	    // /// Debugging
+	    // Double_t pars[5] = {func->GetParameter(0),
+	    // 			func->GetParameter(1),
+	    // 			func->GetParameter(2),
+	    // 			func->GetParameter(3),
+	    // 			func->GetParameter(4)
+	    // };
+	    // for(int i=0;i<15;i++) {
+	    //   // Double_t *x,*y;
+	    //   // tg->GetPoint(i,x,y);
+	    //   Double_t ii = i;
+	    //   printf("i=%d\tx=%f\ty=%f\tdata=%f\tpred=%f\n",i,tg->GetPointX(i),tg->GetPointY(i),AllQs[bar][i],SinglePulseShape(&ii,pars));
+	    // }
+	    // ///
 	    
-	    // hPhot1Q0->Fill(func->GetParameter(0));
-	    // hPhot1T0->Fill(func->GetParameter(1));
-	    // hPhot1K->Fill(func->GetParameter(2));
-	    // hPhot1TMax->Fill(func->GetParameter(3));
-	    // hPhot1Ped->Fill(func->GetParameter(4));
-	    // hPhot1Chi->Fill(func->GetChisquare());
+	    hPhot1Q0->Fill(func->GetParameter(0));
+	    hPhot1T0->Fill(func->GetParameter(1));
+	    hPhot1K->Fill(func->GetParameter(2));
+	    hPhot1TMax->Fill(func->GetParameter(3));
+	    hPhot1Ped->Fill(func->GetParameter(4));
+	    hPhot1Chi->Fill(func->GetChisquare());
 
 	  //   // Trial 3: Fit the pulse piece-by-piece
 	  // float meank=0;
@@ -285,15 +291,15 @@ namespace trigscint {
 	  // }
 	  // hPhot1Trial3KAvg->Fill(meank/ngood);
 	  
-	  // // printf("\n");
-	  // //   }
-	  // // }
+	  // printf("\n");
+	  //   }
+	  // }
 	  
 	  if(photcount<100){
 	    for(int ts=0;ts<15;ts++)
 	      hPhot1Pulse[photcount]->Fill(ts,AllQs[bar][ts]);
-	    photcount++;
 	  }
+	  photcount++;
 	}
       }
     
@@ -359,7 +365,7 @@ namespace trigscint {
     // Single-PE fitting related histograms
     hPhot1Q0 = new TH1F("hPhot1Q0","",100,-1000,1000);
     hPhot1T0 = new TH1F("hPhot1T0","",100,-1000,1000);
-    hPhot1K = new TH1F("hPhot1K","",100,-1000,1000);
+    hPhot1K = new TH1F("hPhot1K","",100,-100,100);
     hPhot1TMax = new TH1F("hPhot1TMax","",100,-1000,1000);
     hPhot1Ped = new TH1F("hPhot1Ped","",100,-1000,1000);
     hPhot1Chi = new TH1F("hPhot1Chi","",100,0,2000);
@@ -443,6 +449,38 @@ namespace trigscint {
     auto pls = new Expo(par[2],par[3]);
     pls->AddPulse(par[1],par[0]);
     return par[4]+pls->Integrate(ts[0],ts[0]+25);
+  }
+  
+  void GuessPar(TF1* ff, float* charge,int max_id)
+  {
+    float T=25.0;                   // time period
+    bool CalculatePed = true;
+    float k_ = log((charge[max_id+1]-charge[max_id+2])/(charge[max_id+2]-charge[max_id+3]))/T;
+
+    float const1 = 1/(1-exp(-k_*T));
+
+    float ped_{0};
+    if(CalculatePed)
+      ped_ = (charge[max_id+2]-charge[max_id+1]*exp(-k_*T))*const1;
+    // else
+    //   ped_ = PEDESTAL;
+
+    float Q0_ = charge[max_id-1]+charge[max_id]-2*ped_+(charge[max_id+1]-charge[max_id+2])*const1*const1;
+    float t0_ = time[max_id-1];
+    float tmax_ = 60.0;
+
+    if(CalculatePed){
+      ff->SetParameters(Q0_,t0_,k_,tmax_,ped_);
+      ff->SetParNames("Q0","T0","K","TMax","Ped");
+    }
+    else{
+      ff->SetParameters(Q0_,t0_,k_,tmax_);
+      ff->SetParNames("Q0","T0","K","TMax");
+    }
+
+    printf("The guessed values:\n");
+    printf("Q0\tt0\tK\ttmax\tpedestal\n");
+    printf("%.0f\t%.0f\t%.3f\t%.1f\t%.2f\n",Q0_,t0_,k_,tmax_,ped_);
   }
   
   Double_t CostFunction(const double* par) {
