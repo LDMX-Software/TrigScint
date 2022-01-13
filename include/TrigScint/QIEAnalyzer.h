@@ -126,6 +126,14 @@ namespace trigscint {
     TH1F* hPhot1Ped;
     TH1F* hPhot1Chi;
 
+    // Single-PE fitting (Pedestal not fitted)
+    TH1F* hPhot1Q0NoPed;
+    TH1F* hPhot1T0NoPed;
+    TH1F* hPhot1KNoPed;
+    TH1F* hPhot1TMaxNoPed;
+    TH1F* hPhot1PedNoPed;
+    TH1F* hPhot1ChiNoPed;
+    
     TH1F* hPhot1Trial3K[3];	// k's calculated from trial 3
     TH1F* hPhot1Trial3KAvg;	// Average k's calculated from trial 3
 
@@ -141,6 +149,7 @@ namespace trigscint {
     double yToIDfactor_{50./80.};
 
     void FitSinglePulse(Float_t* Qi);	// Fit a single pulse using 6 time samples
+    void GuessPar(TF1* ff, float* charge,int max_id,bool CalculatePed);
   };
 }
 

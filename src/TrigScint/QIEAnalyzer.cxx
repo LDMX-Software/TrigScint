@@ -31,24 +31,12 @@ namespace trigscint {
   Double_t SinglePulseShape(Double_t* ts, Double_t* par);
   Double_t SinglePulseShapeNoPed(Double_t* ts_, Double_t* par);
 
-  void GuessPar(TF1* ff, float* charge,int max_id,bool CalculatePed);
-
   // Temporarily store charge per time sample
   float charge[15];
   /// array of integers 0,1,2,..,maxTS-1
-  // float time[15];
   float time[15];
   // to manually calculate the pedestal
   Float_t PEDESTAL{0};
-
-  /*
-   * Cost function to fit a single function
-   * par[0] = Total integral of the pulse (Q0)
-   * par[1] = start time of the pulse (t0)
-   * par[2] = 1/RC time constant (k)
-   * par[3] = time when pulse attains maximum (tmax)
-   */
-  Double_t CostFunction(const double* par);
   
   QIEAnalyzer::QIEAnalyzer(const std::string& name,
 			   framework::Process& process)
@@ -176,7 +164,6 @@ namespace trigscint {
 	    for(int i=0;i<15;i++)
 	      charge[i] = AllQs[bar][i];
 	    
-
 	    // Find maximum of pulse
 	    int t1 = 0;		// First time sample to consider
 	    int t2 = 5;		// Last tim sample to consider
@@ -212,46 +199,25 @@ namespace trigscint {
 
 	    GuessPar(func, &AllQs[bar][0],t1+1,true);
 	    GuessPar(func2, &AllQs[bar][0],t1+1,false);
-	    TCanvas* tc = new TCanvas(Form("c_evt_%i",photcount),"bb",800,600);
-
-	    tg->Draw("APE");
-	    std::cout<<"\n*** This prints before fitting";
-	    // Print event info for debugging
-	    std::cout<<"\nid\t";
-	    for(int i=0;i<15;i++){printf("%i\t",i);}
-	    std::cout<<"\nQ[]\t";
-	    for(int i=0;i<15;i++){printf("%.1f\t",AllQs[bar][i]);}
-	    printf("\nt1=  %i\tt2= %i\n",t1,t2);
 	    
-	    tg->Fit(func,"NQ");
-	    // tg->Fit(func2,"NQ");
-
 	    // Print event info for debugging
-	    std::cout<<"\n*** This prints after fitting";
-	    std::cout<<"\nid\t";
-	    for(int i=0;i<15;i++){printf("%i\t",i);}
-	    std::cout<<"\nQ[]\t";
-	    for(int i=0;i<15;i++){printf("%.1f\t",AllQs[bar][i]);}
-	    printf("\nt1=  %i\tt2= %i\n",t1,t2);
-		
-	    // tg->Fit(func,"NQ");
-	    // tg->Fit(func2,"NMEQ");
-	    delete tc;
+	    ldmx_log(debug)<<"\n*** This prints before fitting";
+	    ldmx_log(debug)<<"Good PE event no.: "<<photcount;
 
-	    // /// Debugging
-	    // Double_t pars[5] = {func->GetParameter(0),
-	    // 			func->GetParameter(1),
-	    // 			func->GetParameter(2),
-	    // 			func->GetParameter(3),
-	    // 			func->GetParameter(4)
-	    // };
-	    // for(int i=0;i<15;i++) {
-	    //   // Double_t *x,*y;
-	    //   // tg->GetPoint(i,x,y);
-	    //   Double_t ii = i;
-	    //   printf("i=%d\tx=%f\ty=%f\tdata=%f\tpred=%f\n",i,tg->GetPointX(i),tg->GetPointY(i),AllQs[bar][i],SinglePulseShape(&ii,pars));
-	    // }
-	    // ///
+	    ldmx_log(debug)<<"\nid\t";
+	    for(int i=0;i<15;i++)
+	      ldmx_log(debug)<<i<<"\t";
+
+	    ldmx_log(debug)<<"\nQ[]\t";
+	    for(int i=0;i<15;i++)
+	      ldmx_log(debug)<<AllQs[bar][i]<<"\t";
+
+	    ldmx_log(debug)<<"\nt1=  "<<t1<<"\tt2= "<<t2<<"\n";
+	    
+	    TCanvas* tc = new TCanvas(Form("c_evt_%i",photcount),"bb",800,600);
+	    tg->Draw("APE");
+	    tg->Fit(func,"NQ");
+	    tg->Fit(func2,"NQ");
 	    
 	    hPhot1Q0->Fill(func->GetParameter(0));
 	    hPhot1T0->Fill(func->GetParameter(1));
@@ -259,9 +225,21 @@ namespace trigscint {
 	    hPhot1TMax->Fill(func->GetParameter(3));
 	    hPhot1Ped->Fill(func->GetParameter(4));
 	    hPhot1Chi->Fill(func->GetChisquare());
-	  
+
+	    hPhot1Q0NoPed->Fill(func2->GetParameter(0));
+	    hPhot1T0NoPed->Fill(func2->GetParameter(1));
+	    hPhot1KNoPed->Fill(func2->GetParameter(2));
+	    hPhot1TMaxNoPed->Fill(func2->GetParameter(3));
+	    hPhot1PedNoPed->Fill(PEDESTAL);
+	    hPhot1ChiNoPed->Fill(func2->GetChisquare());
+	    
+	    delete func;
+	    delete func2;
+	    delete tg;
+	    delete tc;
 	}
-      }
+	photcount++;
+      }	// End of good photon loop
     
       Abs_Dev->Fill(chan.getMedQ(),chan.getMaxQ()-chan.getMinQ());
     }
@@ -325,20 +303,25 @@ namespace trigscint {
     // Single-PE fitting related histograms
     hPhot1Q0 = new TH1F("hPhot1Q0","",100,-1000,1000);
     hPhot1T0 = new TH1F("hPhot1T0","",100,-1000,1000);
-    hPhot1K = new TH1F("hPhot1K","",100,-100,100);
+    hPhot1K = new TH1F("hPhot1K","",100,-20,30);
     hPhot1TMax = new TH1F("hPhot1TMax","",100,-1000,1000);
-    hPhot1Ped = new TH1F("hPhot1Ped","",100,-1000,1000);
-    // hPhot1Chi = new TH1F("hPhot1Chi","",100,0,2000);
-    hPhot1Chi = new TH1F("hPhot1Chi","",100,0,10000);
+    hPhot1Ped = new TH1F("hPhot1Ped","",500,-500,500);
+    hPhot1Chi = new TH1F("hPhot1Chi","",100,0,1e5);
+
+    // Single-PE fitting related histograms
+    hPhot1Q0NoPed = new TH1F("hPhot1Q0NoPed","",100,-1000,1000);
+    hPhot1T0NoPed = new TH1F("hPhot1T0NoPed","",100,-1000,1000);
+    hPhot1KNoPed = new TH1F("hPhot1KNoPed","",100,-20,30);
+    hPhot1TMaxNoPed = new TH1F("hPhot1TMaxNoPed","",100,-1000,1000);
+    hPhot1PedNoPed = new TH1F("hPhot1PedNoPed","",500,-500,500);
+    hPhot1ChiNoPed = new TH1F("hPhot1ChiNoPed","",100,0,1e5);
     
     for(int i=0;i<nChannels;i++){
       hQAvg15[i] = new TH1F(Form("hQAvg15_%i",i),Form("Average Charge distribution in 1st 15 time samples [Channel %i];Charge [fC];",i),620,-20,600);
       hQAvg1530[i] = new TH1F(Form("hQAvg1530_%i",i),Form("Average Charge distribution in last 15 time samples [Channel %i];Charge [fC];",i),620,-20,600);
     }
     
-    // time = new float[maxTS];
     time[0]=0.;
-    // zeroes = new float[maxTS];
     zeroes = new float[15];
     for (int ii=1;ii<15;ii++){
       time[ii] = time[ii-1]+25.0;
@@ -405,13 +388,12 @@ namespace trigscint {
   }
 
 
-  // Double_t QIEAnalyzer::SinglePulseShape(Double_t* ts, Double_t* par) {
   Double_t SinglePulseShape(Double_t* ts, Double_t* par) {
-  // Double_t SinglePulseShape(Double_t ts, Double_t* par) {
     auto pls = new Expo(par[2],par[3]);
     pls->AddPulse(par[1],par[0]);
-    return par[4]+pls->Integrate(ts[0],ts[0]+25);
-    // return par[4]+pls->Integrate(ts,ts+25);
+    Double_t integral = par[4]+pls->Integrate(ts[0],ts[0]+25);
+    delete pls;
+    return integral;
   }
   
   Double_t SinglePulseShapeNoPed(Double_t* ts_, Double_t* par) {
@@ -419,13 +401,11 @@ namespace trigscint {
     pls->AddPulse(par[1],par[0]);	      // add a pulse with t0 and integral Q0
 
     Double_t integral = PEDESTAL+pls->Integrate(ts_[0],ts_[0]+25);
+    delete pls;
     return integral;
-    // int digi = smq->Q2ADC(integral);
-    // Double_t lin = smq->ADC2Q(digi);
-    // return lin;
   }
   
-  void GuessPar(TF1* ff, float* charge,int max_id,bool CalculatePed)
+  void QIEAnalyzer::GuessPar(TF1* ff, float* charge,int max_id,bool CalculatePed)
   {
     float T=25.0;                   // time period
     float k_ = log((charge[max_id+1]-charge[max_id+2])/(charge[max_id+2]-charge[max_id+3]))/T;
@@ -451,40 +431,12 @@ namespace trigscint {
       ff->SetParNames("Q0","T0","K","TMax");
     }
 
-    printf("The guessed values:\n");
-    printf("Q0\tt0\tK\ttmax\tpedestal\n");
-    printf("%.0f\t%.0f\t%.3f\t%.1f\t%.2f\n",Q0_,t0_,k_,tmax_,ped_);
+    ldmx_log(debug)<<"The guessed values:\n";
+    ldmx_log(debug)<<"Q0\tt0\tK\ttmax\tpedestal\n";
+    ldmx_log(debug)<<Q0_<<"\t"<<t0_<<"\t"<<k_<<"\t"<<tmax_<<"\t"<<ped_<<"\n";
+    return;
   }
   
-  Double_t CostFunction(const double* par) {
-    Double_t cost{0};
-    auto pls = new Expo(par[2],par[3]);
-    pls->AddPulse(par[1],par[0]);
-    
-
-    for(int i=0;i<15;i++){
-      double Qpred = pls->Integrate(time[i],time[i]+25);
-      printf("x = %f\tf(x) = %f\tQpred = %f\tQData = %f\n",time[i],pls->EvalSingle(time[i],0),Qpred,charge[i]); // Debugging
-      cost += pow(Qpred-charge[i],2);
-      // std::cout<<std::setw(10)<<Qpred<<"\t|";
-    }
-    // for(int i=0;i<6;i++)
-    //   printf("%f\t",par[i]);
-    std::cout<<cost<<"\n";
-    
-    return cost;
-  }
-
-  // /*
-  //  * @brief Fit a single pulse
-  //  * @param Qi An array of 6 floats, with Qi[1] being the charge maximum
-  //  * Qi[i] = charge observed in (i-1) time sample after charge maximum
-  //  * The algorithm will find 5 parameters: Q0,to,k,tmax,pedestal
-  //  */
-  // void QIEAnalyzer::FitSinglePulse(Float_t* Qi) {
-  //   Float_t k = log(Qi[2]/Qi[3])/25.0;
-  //   Float_t A = (Qi[2]-Qi[3])/(exp(-)-exp());
-  // }
 }
 
 DECLARE_ANALYZER_NS(trigscint, QIEAnalyzer)
