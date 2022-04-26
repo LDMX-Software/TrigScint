@@ -49,11 +49,10 @@ class QIEEncoder(ldmxcfg.Producer) :
 
 class QIEDecoder(ldmxcfg.Producer) :
     """Configuration for QIE encoder"""
-    def __init__(self, mapFile, name = 'QIEDecode'): 
+    def __init__(self, mapFile, dataFile, name = 'QIEDecode'): 
         super().__init__(f'{name}', 'trigscint::QIEDecoder', "TrigScint")
         self.name = name 
-        self.input_pass_name = ''
-        self.input_collection = 'QIEstreamTag'
+        self.input_file = dataFile
         self.output_collection = 'decodedQIETag'
         self.channel_map_file = mapFile
         self.number_channels = 50
@@ -61,24 +60,21 @@ class QIEDecoder(ldmxcfg.Producer) :
         self.is_real_data=False
         self.verbose = False
 
-    def tagger(mapFile) :
+    def tagger(mapFile, dataFile) :
         """Get the decoding emulator for the trigger pad upstream of tagger"""
-        dec = QIEDecoder(mapFile,'tag')
-        dec.input_collection = 'QIEstreamTag'
+        dec = QIEDecoder(mapFile,dataFile,'tag')
         dec.output_collection= 'decodedQIETag'
         return dec
 
     def up(mapFile) :
         """Get the decoding emulator for the trigger pad upstream of target"""
-        dec = QIEDecoder(mapFile,'up')
-        dec.input_collection = 'QIEstreamUp'
+        dec = QIEDecoder(mapFile,dataFile,'up')
         dec.output_collection= 'decodedQIEUp'
         return dec
 
     def down(mapFile) :
         """Get the decoding emulator for the trigger pad downstream of target"""
-        dec = QIEDecoder(mapFile,'down')
-        dec.input_collection = 'QIEstreamDown'
+        dec = QIEDecoder(mapFile,dataFile,'down')
         dec.output_collection= 'decodedQIEDown'
         return dec
 
