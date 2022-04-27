@@ -56,7 +56,6 @@ class QIEDecoder(ldmxcfg.Producer) :
         self.output_collection = 'decodedQIETag'
         self.channel_map_file = mapFile
         self.number_channels = 50
-        self.number_time_samples = 5
         self.is_real_data=False
         self.verbose = False
 
@@ -66,13 +65,13 @@ class QIEDecoder(ldmxcfg.Producer) :
         dec.output_collection= 'decodedQIETag'
         return dec
 
-    def up(mapFile) :
+    def up(mapFile, dataFile) :
         """Get the decoding emulator for the trigger pad upstream of target"""
         dec = QIEDecoder(mapFile,dataFile,'up')
         dec.output_collection= 'decodedQIEUp'
         return dec
 
-    def down(mapFile) :
+    def down(mapFile, dataFile) :
         """Get the decoding emulator for the trigger pad downstream of target"""
         dec = QIEDecoder(mapFile,dataFile,'down')
         dec.output_collection= 'decodedQIEDown'

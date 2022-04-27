@@ -9,35 +9,69 @@
 #include "Framework/Event.h"
 #include "Framework/EventProcessor.h"  //Needed to declare processor
 #include "Packing/Utility/Reader.h"
+#include "Packing/Utility/Hex.h"
 #include "TrigScint/Event/TrigScintQIEDigis.h"
 #include "TrigScint/Event/QIEStream.h"
 
 namespace trigscint {
 
+/**
+ * Smallest "chunk" of data coming from TS frontend
+ *
+ * Represents a single sample of data collected from the
+ * scintillator bars.
+ *
+ * Similar to qie_frame from legacy python script
+ */
+struct TimeSample {
+  std::vector<uint8_t> adcs;
+  std::vector<uint8_t> tdcs;
+  int capid, ce, bc0;
+
+  /**
+   * Parse the input stream of bytes into this time sample
+   *
+   * @note The input buffer needs to be _exactly_ 11 bytes.
+   *
+   * ## Format
+   * Each row is a BYTE (two hex digits, 8 bits)
+   *
+   *  | ???? | capid (2 bits) | ce (1 bit) | bc0 (1 bit) |
+   *  | adc0 |
+   *  | adc1 |
+   *  | .... |
+   *  | adc8 |
+   *  | letdc0 | letdc1 | letdc2 | letdc3 |
+   *  | letdc4 | letdc5 | letdc6 | letdc7 |
+   *
+   * this is LETDC; only the two most significant bits included
+   *    they are shipped as least significant bits --> shift them 
+   *    want LE TDC = 3 to correspond to 64 > 49 (which is maxTDC in sim)
+   */
+  TimeSample(const std::vector<uint8_t>& buffer) {
+    capid = (buffer.at(0) >> 2) & 0x3;
+    ce    = (buffer.at(0) >> 1) & 0x1;
+    bc0   = (buffer.at(0) >> 0) & 0x1;
+    for (std::size_t i_channel{0}; i_channel < 8; i_channel++) {
+      adcs.push_back(buffer.at(1+i_channel));
+      uint8_t tdc_pack = buffer.at(9 + 1*(i_channel>3));
+      uint8_t letdc = ((tdc_pack >> (2*(i_channel%4))) & 0xff);
+      tdcs.push_back(16*(letdc+1));
+    }
+  } // decoding constructor
+
+};  // TimeSample
+
 class QIEDecoder : public framework::Producer {
  public:
   QIEDecoder(const std::string &name, framework::Process &process)
       : Producer(name, process) {}
-
-  /**
-   * Default destructor, closes up boost archive and input stream
-   */
   ~QIEDecoder() = default;
-
-  /**
-   * Configure our converter based off the configuration parameters
-   * decoded from the passed python script
-   */
   virtual void configure(framework::config::Parameters &ps) final override;
-
   virtual void produce(framework::Event &event) final override;
-
-  virtual void onProcessStart() final override;
-
-  virtual void onProcessEnd() final override;
-
  private:
-
+  std::vector<TimeSample> extract_timesamples(const std::vector<uint32_t>& stream);
+ private:
   /// the channel mapping
   std::string channelMapFileName_;
   std::ifstream channelMapFile_;
@@ -51,8 +85,6 @@ class QIEDecoder : public framework::Producer {
 
   // number of channels in the pad 
   int nChannels_{50};
-  // number of time samples making up the event
-  int nSamples_{5};
   // configurable flag, to set the isRealData bit in the event header
   bool isRealData_{false};
   /// binary file reader
@@ -64,7 +96,6 @@ void QIEDecoder::configure(framework::config::Parameters &ps) {
   outputCollection_ = ps.getParameter<std::string>("output_collection");
   channelMapFileName_ = ps.getParameter<std::string>("channel_map_file");
   nChannels_ = ps.getParameter<int>("number_channels");
-  nSamples_ = ps.getParameter<int>("number_time_samples");
   isRealData_ = ps.getParameter<bool>("is_real_data");
   verbose_ = ps.getParameter<bool>("verbose");
   std::string input_file{ps.getParameter<std::string>("input_file")};
@@ -74,13 +105,13 @@ void QIEDecoder::configure(framework::config::Parameters &ps) {
     "\ninput_file = " << input_file <<
     "\nchannel_map_file = " <<  channelMapFileName_ <<
     "\nnumber_channels  = " <<  nChannels_ <<
-    "\nnumber_time_samples  = " <<  nSamples_ <<
     "\nis_real_data  = " <<  isRealData_ <<
     "\nverbose          = " << verbose_ ;
 
   channelMapFile_.open(channelMapFileName_, std::ios::in);
   if (! channelMapFile_.is_open() ) {
-    EXCEPTION_RAISE("BadMapFile",   "The channel mapping file cannot be opened."); // <-- appears this needs implementing first 
+    // appears that the exception is not being thrown
+    EXCEPTION_RAISE("BadMapFile", "The channel mapping file cannot be opened.");
     ldmx_log(fatal) <<  "The channel mapping file cannot be opened.";
     return;
   }
@@ -99,145 +130,123 @@ void QIEDecoder::configure(framework::config::Parameters &ps) {
     ldmx_log(debug) << elID << "  chID " << chID ;
   }
   channelMapFile_.close();
-  if (elID != nChannels_ - 1 )
-    ldmx_log(fatal) << "The set number of channels " << nChannels_ << " seems not to match the number from the map (+1) :" << elID; 
+  if (elID != nChannels_ - 1)
+    ldmx_log(fatal) << "The set number of channels " << nChannels_ 
+      << " seems not to match the number from the map (+1) :" << elID; 
 
   reader_.open(input_file);
   return;
 }  // configure
 
 /**
- * Similar to qie_frame from legacy python script
+ * clean and split the raw fiber data into time samples
+ *
+ * The fiber data is "contaminated" with different signal phrases.
+ * - 0xfbf7 : needs to be removed
+ * - 0x7cbc : needs to be removed
+ * - 0xbc   : separates time samples within a fiber
+ *
+ * After this cleaning and splitting, we provide the encoded time sample
+ * bytes to the TimeSample constructor to decode into data.
  */
-struct TimeSample {
-  std::vector<uint8_t> adcs;
-  std::vector<uint8_t> tdcs;
-  int capid, ce, bc0;
-
-  /**
-   * Parse the input stream of bytes into this time sample
-   *
-   * ## Format
-   * Each row is a BYTE (two hex digits, 8 bits)
-   *
-   *  | ???? | capid (2 bits) | ce (1 bit) | bc0 (1 bit) |
-   *  | adc0 |
-   *  | adc1 |
-   *  | .... |
-   *  | adc8 |
-   *  | letdc0 | letdc1 | letdc2 | letdc3 |
-   *  | letdc4 | letdc5 | letdc6 | letdc7 |
-   *
-   * this is LETDC; only the two most significant bits included
-   *    they are shipped as least significant bits --> shift them 
-   *    want LE TDC = 3 to correspond to 64 > 49 (which is maxTDC in sim)
-   */
-  TimeSample(const std::vector<uint8_t>& buffer) {
-    if (buffer.size() != 11) {
-      std::cerr << "TimeSample : was expecting 11 bytes, got " << buffer.size() << std::endl;
-      return;
+std::vector<TimeSample> QIEDecoder::extract_timesamples(const std::vector<uint32_t>& stream) {
+  // clean
+  std::vector<uint16_t> cleaned;
+  for (const uint32_t& word : stream) {
+    for (std::size_t i{0}; i < 2; i++) {
+      uint16_t subword = ((word >> 16*i) & 0xffff);
+      if (subword != 0xfbf7 and subword != 0x7cbc) 
+        cleaned.push_back(subword);
     }
-    capid = (buffer.at(0) >> 2) & 0x3;
-    ce    = (buffer.at(0) >> 1) & 0x1;
-    bc0   = (buffer.at(0) >> 0) & 0x1;
-    for (std::size_t i_channel{0}; i_channel < 8; i_channel++) {
-      adcs.push_back(buffer.at(1+i_channel));
-      uint8_t tdc_pack = buffer.at(9 + 1*(i_channel>3));
-      uint8_t letdc = ((tdc_pack >> (2*(i_channel%4))) & 0xff);
-      tdcs.push_back(16*(letdc+1));
-    }
-  } // decoding constructor
-};  // TimeSample
+  }
 
-class EventPacket {
-  uint32_t time_since_spill_;
-  /// no longer part of event info, set to 0 to keep compatibility
-  uint32_t time_stamp_{0}, time_stamp_tick_{0};
-  /// error codes, calculated during decoding
-  bool crc0_error_{false}, crc1_error_{false}, cid_unsync_{false}, cid_skip_{false};
-  /**
-   * adc readout map in event
-   *
-   * key: int electronics ID of channel
-   * val: vector of adc indexed by time sample
-   */
-  std::map<int, std::vector<int>> adc_map_;
-
-  /**
-   * tdc readout map in event
-   *
-   * key: int electronics ID of channel
-   * val: vector of tdc indexed by time sample
-   */
-  std::map<int, std::vector<int>> tdc_map_;
-
-  /**
-   * clean and split the raw fiber data into time samples
-   *
-   * The fiber data is "contaminated" with different signal phrases.
-   * - 0xfbf7 : needs to be removed
-   * - 0x7cbc : needs to be removed
-   * - 0xbc   : separates time samples within a fiber
-   *
-   */
-  std::vector<TimeSample> extract_timesamples(const std::vector<uint32_t>& stream) {
-    // clean
-    std::vector<uint16_t> cleaned;
-    cleaned.reserve(stream.size()*2);
-    for (const uint32_t& word : stream) {
-      for (std::size_t i{0}; i < 2; i++) {
-        uint16_t subword = ((word >> 16*i) & 0xffff);
-        if (subword != 0xfbf7 and subword != 0x7cbc) 
-          cleaned.push_back(subword);
+  // split
+  std::vector<std::vector<uint8_t>> timesamples;
+  timesamples.emplace_back(); // need first one
+  for (const uint16_t& word : cleaned) {
+    uint8_t b0 = ((word >> 8) & 0xff);
+    uint8_t b1 = ((word >> 0) & 0xff);
+    for (uint8_t byte : {b0,b1}) {
+      if (byte == 0xbc) {
+        // new timesample
+        ldmx_log(debug) << "New Timesample, previous one has " 
+          << timesamples.back().size() << " bytes";
+        timesamples.emplace_back();
+      } else {
+        timesamples.back().push_back(byte);
       }
     }
+  }
+  ldmx_log(debug) << "Last time sample has " << timesamples.back().size() << " bytes";
 
-    // split
-    std::vector<std::vector<uint8_t>> timesamples;
-    for (const uint16_t& word : cleaned) {
-      for (std::size_t i{0}; i < 2; i++) {
-        uint8_t byte = ((word >> 8*i) & 0xff);
-        if (byte == 0xbc) {
-          // new timesample
-          timesamples.emplace_back();
-        } else {
-          timesamples.back().push_back(byte);
-        }
-      }
-    }
-
-    // decode
-    std::vector<TimeSample> decoded_ts;
-    for (const auto& raw_ts : timesamples) {
+  // decode
+  std::vector<TimeSample> decoded_ts;
+  for (const auto& raw_ts : timesamples) {
+    if (raw_ts.size() == 11) {
       decoded_ts.emplace_back(raw_ts);
+    } else {
+      ldmx_log(debug) << "Received " << raw_ts.size() << " != 11 bytes for a time sample";
     }
-
-    return decoded_ts;
   }
 
- public:
-  uint32_t getTimeSinceSpill() const { return time_since_spill_; }
-  uint32_t getTimeStamp() const { return time_stamp_; }
-  uint32_t getTimeStampTick() const { return time_stamp_tick_; }
-  bool crc0Error() const { return crc0_error_; }
-  bool crc1Error() const { return crc1_error_; }
-  bool cidUnsync() const { return cid_unsync_; }
-  bool cidSkip() const { return cid_skip_; }
-  const std::map<int,std::vector<int>>& adcs() const {
-    return adc_map_;
+  return decoded_ts;
+}
+
+void QIEDecoder::produce(framework::Event &event) {
+  static uint64_t w; // dummy word for decoding
+
+  ldmx_log(debug) << "QIEDecoder: produce() starts! Event number: "
+    << event.getEventHeader().getEventNumber();
+
+  if (event.getEventNumber() < 2) {
+    ldmx_log(debug) << "First event, throwing away words until first event signal word.";
+    w = 0;
+    while (reader_ and w != 0xffffffffffffffff) reader_ >> w;
   }
-  const std::vector<int>& adcs(int elec_id) const {
-    return adcs().at(elec_id);
-  }
-  const std::map<int,std::vector<int>>& tdcs() const {
-    return tdc_map_;
-  }
-  const std::vector<int>& tdcs(int elec_id) const {
-    return tdcs().at(elec_id);
-  }
+
+  // first word is timestamp word
+  reader_ >> w;
+  uint32_t timeSpill = w & 0xffffffff;
+  /// no longer part of event info, set to 0 to keep compatibility
+  uint32_t timeEpoch = 0; // UTC seconds
+  uint32_t timeClock = 0; // ns clock ticks since last whole second
+  ldmx_log(debug) << "time stamp words are : " << timeEpoch 
+    << " (" << std::bitset<64>(timeEpoch) << ") and " 
+    << timeClock << " (" << std::bitset<64>(timeClock) << ") clock ticks, and " 
+    << timeSpill << " (" << std::bitset<64>(timeSpill) << ", or, " 
+    << std::hex << timeSpill << std::dec << ") counts since start of spill";
+
   /**
-   * Function called by Reader when streaming
-   *
+   * The first 6 bits of the time since spill are part of something else,
+   * remove them by taking remainder in division by the values of the last
+   * skipped bit
+   */
+  int sigBitsSkip=6;
+  int divisor=TMath::Power(2, 32-sigBitsSkip);
+  timeSpill=timeSpill%divisor;
+  //timeSpill=timeSpill/spillTimeConv_;
+  ldmx_log(debug) << "After taking it mod 2^" << 32-sigBitsSkip 
+    << " (which is " << divisor << ", spill time is " << timeSpill;
+  event.getEventHeader().setIntParameter("timeSinceSpill", timeSpill);
+  //  event.getEventHeader().setTimeSinceSpill(timeSpill); //not working 
+
+  TTimeStamp *timeStamp = new TTimeStamp(timeEpoch);
+  //  timeStamp->SetNanoSec(timeClock); //not sure about this one...
+  event.getEventHeader().setTimestamp(*timeStamp);
+
+  //  ldmx::EventHeader *eh = (ldmx::EventHeader*)event.getEventHeaderPtr();
+  //eh->setIsRealData(isRealData_); //doesn't help
+  
+  /*   // comment for now, requires pushing change ot EventHeader
+  event.getEventHeader().setIsRealData(isRealData_);
+  ldmx_log(debug) << "Decoder bool isRealData = " << isRealData_ 
+    << " and after attempt of setting it, event header returns " 
+    <<  event.getEventHeader().isRealData();
+  */
+
+  ldmx_log(debug) << "Done with timestamp header, moving onto raw fiber data.";
+
+  /**
    * We read 64-bit words until the boundary word (all F's) is encountered
    *
    * We assume the last boundary word was read by the last event.
@@ -251,113 +260,82 @@ class EventPacket {
    *  |  ...continue...   |  ...continue...   |
    *  | End of Event Signal Word (All 1s)     |
    *
-   * Look at extract_timesamples and TimeSample for how to decode the
+   * Look at TimeSample for how to decode the
    * two "columns" of raw fiber data.
    */
-  packing::utility::Reader& read(packing::utility::Reader& r) {
-    static uint64_t w; // dummy word for reading
-
-    // first word is timestamp word
-    r >> w;
-    time_since_spill_ = w & 0xffffffff;
-
-    // the rest of the words are split across fibers
-    std::vector<uint32_t> fiber_1_raw, fiber_2_raw;
-    while (r and w != 0xffffffffffffffff) {
-      r >> w;
-      fiber_1_raw.push_back(w & 0xffffffff);
-      fiber_2_raw.push_back((w >> 32) & 0xffffffff);
-    }
-
-    // clean_kchar, clean_BC7C, split across 'BC' for both fibers
-    std::vector<TimeSample> fiber_1{extract_timesamples(fiber_1_raw)},
-                            fiber_2{extract_timesamples(fiber_2_raw)};
-
-    if (fiber_1.size() != fiber_2.size()) {
-      std::cout << "Non-matching number of time samples :( " << std::endl;
-      return r;
-    }
-
-    adc_map_.clear();
-    tdc_map_.clear();
-    for (std::size_t i_ts{0}; i_ts < fiber_1.size(); i_ts++) {
-      if (fiber_1.at(i_ts).capid != fiber_2.at(i_ts).capid) cid_unsync_ = true;
-      if (fiber_1.at(i_ts).ce != 0) crc0_error_ = true;
-      if (fiber_2.at(i_ts).ce != 0) crc1_error_ = true;
-      if (i_ts > 0) {
-        // logic needs some work, what happens if corrupt time sample word in middle?
-        if ((fiber_1.at(i_ts-1).capid+1)%4 != fiber_1.at(i_ts).capid%4) {
-          std::cout << "Found CIDSkip in fiber 1" << std::endl;
-          cid_skip_ = true;
-        }
-        if ((fiber_2.at(i_ts-1).capid+1)%4 != fiber_2.at(i_ts).capid%4) {
-          std::cout << "Found CIDSkip in fiber 1" << std::endl;
-          cid_skip_ = true;
-        }
-      } // check if corrupted word
-      for (std::size_t i_c{0}; i_c < 8; i_c++) {
-        adc_map_[i_c  ].push_back(fiber_1.at(i_ts).adcs.at(i_c));
-        adc_map_[i_c+8].push_back(fiber_2.at(i_ts).adcs.at(i_c));
-        tdc_map_[i_c  ].push_back(fiber_1.at(i_ts).tdcs.at(i_c));
-        tdc_map_[i_c+8].push_back(fiber_2.at(i_ts).tdcs.at(i_c));
-      } // loop over channels in a fiber
-    } // loop over time samples
-
-    return r;
-  } // read
-}; // EventPacket
-
-void QIEDecoder::produce(framework::Event &event) {
-  // dummy packet for transient decoding
-  static EventPacket event_packet;
-
-  ldmx_log(debug) << "QIEDecoder: produce() starts! Event number: "
-    << event.getEventHeader().getEventNumber();
-
-  ldmx_log(debug) << "Reading next event packet";
-  if (!(reader_ >> event_packet)) {
-    ldmx_log(debug) << "no more events";
-    return; //abortEvent();
+  std::vector<uint32_t> fiber_1_raw, fiber_2_raw;
+  w = 0;
+  while (reader_ and w != 0xffffffffffffffff) {
+    reader_ >> w;
+    fiber_1_raw.push_back(w & 0xffffffff);
+    fiber_2_raw.push_back((w >> 32) & 0xffffffff);
   }
 
-  //  ldmx::EventHeader *eh = (ldmx::EventHeader*)event.getEventHeaderPtr();
-  //eh->setIsRealData(isRealData_); //doesn't help
-  
-  /*   // comment for now, requires pushing change ot EventHeader
-  event.getEventHeader().setIsRealData(isRealData_);
-  ldmx_log(debug) << "Decoder bool isRealData = " << isRealData_ 
-    << " and after attempt of setting it, event header returns " <<  event.getEventHeader().isRealData();
-  */
-    //turns out this need to be configurable for now, to read real data
-  int nSamp = nSamples_; //QIEStream::NUM_SAMPLES ;  
-  ldmx_log(debug) << "num samples = " << nSamp;
-  
-  uint32_t timeEpoch = event_packet.getTimeStamp();
-  uint32_t timeClock = event_packet.getTimeStampTick();
-  uint32_t timeSpill = event_packet.getTimeSinceSpill();
-  ldmx_log(debug) << "time stamp words are : " << timeEpoch 
-    << " (" << std::bitset<64>(timeEpoch) << ") and " 
-    << timeClock << " (" << std::bitset<64>(timeClock) << ") clock ticks, and " 
-    << timeSpill << " (" << std::bitset<64>(timeSpill) << ", or, " 
-    << std::hex << timeSpill << std::dec << ") counts since start of spill";
+  ldmx_log(debug) << "Done reading raw fiber data "
+    << fiber_1_raw.size() << " fiber 1 words and "
+    << fiber_2_raw.size() << " fiber 2 words";
+  ldmx_log(debug) << "extracting time samples from them";
 
-  int sigBitsSkip=6; //the first 6 bits are part of something else. 
-  int divisor=TMath::Power(2, 32-sigBitsSkip);
-  timeSpill=timeSpill%divisor; //remove them by taking remainder in division by the values of the last skipped bit
-  //timeSpill=timeSpill/spillTimeConv_;
-  ldmx_log(debug) << "After taking it mod 2^" << 32-sigBitsSkip << " (which is " << divisor << ", spill time is " << timeSpill;
-  event.getEventHeader().setIntParameter("timeSinceSpill", timeSpill);
-  //  event.getEventHeader().setTimeSinceSpill(timeSpill); //not working 
+  // clean_kchar, clean_BC7C, split across 'BC' for both fibers
+  std::vector<TimeSample> fiber_1{extract_timesamples(fiber_1_raw)},
+                          fiber_2{extract_timesamples(fiber_2_raw)};
 
-  TTimeStamp *timeStamp = new TTimeStamp(timeEpoch);
-  //  timeStamp->SetNanoSec(timeClock); //not sure about this one...
-  event.getEventHeader().setTimestamp(*timeStamp);
+  if (fiber_1.size() != fiber_2.size()) {
+    ldmx_log(fatal) << "Non-matching number of time samples between fibers!";
+    return;
+  }
 
-  /* -- TS event header done; read the channel contents -- */
+  ldmx_log(debug) << fiber_1.size() << " time samples in this event.";
 
-  ldmx_log(debug) << "Done reading in header, ADC and TDC for event " << event.getEventNumber();
+  /// error codes, calculated during decoding
+  bool crc1_error{false}, crc2_error{false}, cid_unsync{false}, cid_skip{false};
+  /**
+   * adc and tdc readout map in event
+   *
+   * Resort the samples into by-channel rather than
+   * by time sample. While sorting, we also check for
+   * various error codes.
+   *
+   * key: int electronics ID of channel
+   * val: vector of adc/tdc indexed by time sample
+   */
+  std::map<int, std::vector<int>> adc_map, tdc_map;
+  for (std::size_t i_ts{0}; i_ts < fiber_1.size(); i_ts++) {
+    if (fiber_1.at(i_ts).capid != fiber_2.at(i_ts).capid) cid_unsync = true;
+    if (fiber_1.at(i_ts).ce != 0) crc1_error = true;
+    if (fiber_2.at(i_ts).ce != 0) crc2_error = true;
+    if (i_ts > 0) {
+      // logic needs some work, what happens if corrupt time sample word in middle?
+      if ((fiber_1.at(i_ts-1).capid+1)%4 != fiber_1.at(i_ts).capid%4) {
+        ldmx_log(debug) << "Found CIDSkip in fiber 1";
+        cid_skip = true;
+      }
+      if ((fiber_2.at(i_ts-1).capid+1)%4 != fiber_2.at(i_ts).capid%4) {
+        ldmx_log(debug) << "Found CIDSkip in fiber 2";
+        cid_skip = true;
+      }
+    } // check if corrupted word
+    for (std::size_t i_c{0}; i_c < 8; i_c++) {
+      adc_map[i_c  ].push_back(fiber_1.at(i_ts).adcs.at(i_c));
+      adc_map[i_c+8].push_back(fiber_2.at(i_ts).adcs.at(i_c));
+      tdc_map[i_c  ].push_back(fiber_1.at(i_ts).tdcs.at(i_c));
+      tdc_map[i_c+8].push_back(fiber_2.at(i_ts).tdcs.at(i_c));
+    } // loop over channels in a fiber
+  } // loop over time samples
+
+  if (crc1_error) ldmx_log(debug) << "CRC Error on fiber 1"; 
+  if (crc2_error) ldmx_log(debug) << "CRC Error on fiber 2";
+  if (cid_unsync) ldmx_log(debug) << "CID unsync between fibers";
+  if (cid_skip  ) ldmx_log(warn) << "At least one CIDSkip found in event";
+
+  /**
+   * Now that the digis are sorted correctly,
+   * we can translate the electronics IDs into bar numbers
+   * put the information into our C++ class
+   * and then ship them out
+   */
   std::vector<trigscint::TrigScintQIEDigis> outDigis;
-  for (const auto& [ elec_id, adcs ] : event_packet.adcs()) {
+  for (const auto& [ elec_id, adcs ] : adc_map) {
     TrigScintQIEDigis  digi;
     digi.setADC(adcs);
     if (channelMap_.find(elec_id) == channelMap_.end()) {
@@ -368,13 +346,11 @@ void QIEDecoder::produce(framework::Event &event) {
     int bar = channelMap_[elec_id];
     digi.setElecID(elec_id);
     digi.setChanID( bar );
-    digi.setTDC(event_packet.tdcs(elec_id));
+    digi.setTDC(tdc_map.at(elec_id));
     digi.setTimeSinceSpill(timeSpill);
     if (bar == 0)
       ldmx_log(debug) << "for bar 0, got time since spill "<< digi.getTimeSinceSpill();
     outDigis.push_back( digi );
-    ldmx_log(debug) << "Iterator points to key " << elec_id
-            << " and mapped channel supposedly  is " << bar ;
     ldmx_log(debug) << "Made digi with elecID = " << digi.getElecID()
             << ", barID = " << digi.getChanID()
             << ", third adc value " << digi.getADC().at(2)
@@ -384,17 +360,6 @@ void QIEDecoder::produce(framework::Event &event) {
   event.add(outputCollection_, outDigis);
 } // produce
 
-void QIEDecoder::onProcessStart() {
-  ldmx_log(debug) << "Process starts!";
-  return;
-}
-
-void QIEDecoder::onProcessEnd() {
-  ldmx_log(debug) << "Process ends!";
-  return;
-}
-
 }  // namespace trigscint                                                                                                                           
-
 DECLARE_PRODUCER_NS(trigscint, QIEDecoder);
 
