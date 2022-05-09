@@ -10,6 +10,7 @@
 #include "Framework/EventProcessor.h"  //Needed to declare processor
 #include "Packing/Utility/Reader.h"
 #include "Packing/Utility/Hex.h"
+#include "Packing/Utility/Mask.h"
 #include "TrigScint/Event/TrigScintQIEDigis.h"
 #include "TrigScint/Event/QIEStream.h"
 
@@ -155,7 +156,7 @@ std::vector<TimeSample> QIEDecoder::extract_timesamples(const std::vector<uint32
   for (const uint32_t& word : stream) {
     for (std::size_t i{0}; i < 2; i++) {
       uint16_t subword = ((word >> 16*i) & 0xffff);
-      if (subword != 0xfbf7 and subword != 0x7cbc) 
+      if (subword != 0xf7fb and subword != 0xbc7c) 
         cleaned.push_back(subword);
     }
   }
@@ -204,29 +205,28 @@ void QIEDecoder::produce(framework::Event &event) {
     while (reader_ and w != 0xffffffffffffffff) reader_ >> w;
   }
 
-  // first word is timestamp word
-  reader_ >> w;
-  uint32_t timeSpill = w & 0xffffffff;
+  /**
+   * The next 64-bit word has the timestamp burried within it.
+   *
+   * The second half of the next 64-bits contains the timestamp
+   * but with endian-ness flopped so we need to read in the bytes
+   * in reverse order.
+   */
+  uint32_t dummy;
+  reader_ >> dummy;
+  uint8_t ts_bytes[4];
+  reader_ >> ts_bytes[3] >> ts_bytes[2] >> ts_bytes[1] >> ts_bytes[0];
+  uint32_t *ts = reinterpret_cast<uint32_t*>(ts_bytes);
+  ldmx_log(debug) << "Header timestamp word: " << packing::utility::hex<uint32_t>(*ts);
+  uint32_t timeSpill = (*ts & packing::utility::mask<26>);
   /// no longer part of event info, set to 0 to keep compatibility
   uint32_t timeEpoch = 0; // UTC seconds
   uint32_t timeClock = 0; // ns clock ticks since last whole second
   ldmx_log(debug) << "time stamp words are : " << timeEpoch 
-    << " (" << std::bitset<64>(timeEpoch) << ") and " 
-    << timeClock << " (" << std::bitset<64>(timeClock) << ") clock ticks, and " 
-    << timeSpill << " (" << std::bitset<64>(timeSpill) << ", or, " 
+    << " (" << std::bitset<32>(timeEpoch) << ") and " 
+    << timeClock << " (" << std::bitset<32>(timeClock) << ") clock ticks, and " 
+    << timeSpill << " (" << std::bitset<32>(timeSpill) << ", or, " 
     << std::hex << timeSpill << std::dec << ") counts since start of spill";
-
-  /**
-   * The first 6 bits of the time since spill are part of something else,
-   * remove them by taking remainder in division by the values of the last
-   * skipped bit
-   */
-  int sigBitsSkip=6;
-  int divisor=TMath::Power(2, 32-sigBitsSkip);
-  timeSpill=timeSpill%divisor;
-  //timeSpill=timeSpill/spillTimeConv_;
-  ldmx_log(debug) << "After taking it mod 2^" << 32-sigBitsSkip 
-    << " (which is " << divisor << ", spill time is " << timeSpill;
   event.getEventHeader().setIntParameter("timeSinceSpill", timeSpill);
   //  event.getEventHeader().setTimeSinceSpill(timeSpill); //not working 
 
@@ -262,13 +262,18 @@ void QIEDecoder::produce(framework::Event &event) {
    *
    * Look at TimeSample for how to decode the
    * two "columns" of raw fiber data.
+   * The fiber data needs to be byte flopped like the time
+   * stamp word above.
    */
   std::vector<uint32_t> fiber_1_raw, fiber_2_raw;
   w = 0;
   while (reader_ and w != 0xffffffffffffffff) {
     reader_ >> w;
-    fiber_1_raw.push_back(w & 0xffffffff);
-    fiber_2_raw.push_back((w >> 32) & 0xffffffff);
+    uint8_t *bytes = reinterpret_cast<uint8_t*>(&w);
+    fiber_1_raw.push_back(
+        (bytes[4]<<24)+(bytes[5]<<16)+(bytes[6]<<8)+bytes[7]);
+    fiber_2_raw.push_back(
+        (bytes[0]<<24)+(bytes[1]<<16)+(bytes[2]<<8)+bytes[3]);
   }
 
   ldmx_log(debug) << "Done reading raw fiber data "
