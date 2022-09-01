@@ -23,7 +23,7 @@ run the following command:
 `ldmx fire TrigScint/exampleConfigs/runQIEDecode.py test_unpacked.root test_digi.root "raw" 24 TrigScint/data/channelMap_identity_16channels.txt`
 The first argument is the input root file from step 2; the second is the output file name; the third is ????; the fourth
 is the channel mapping file. 
-### Step 4:  
+### Step 4: Linearize hits
 `ldmx fire TrigScint/exampleConfigs/runTSLinearizer.py test_digi.root 2`
 ### Step 5: Hit reconstruction
 To perform this step, run the following command: 
