@@ -117,11 +117,13 @@ for file in $(cat $fileList) ; do
     fi
 	#doRerun=1     #sometimes convenient to force rerunning from here 
 	timeRaw=$(date +%s)
+	echo "GOT TO HERE"
 	if [[ ! -f ${digiRootFile} || ${doRerun} -eq 1 ]] ; then  #if no .root file, or, indeed did rerun the raw step
 		$RUN_FIRE $configDir/runQIEDecode.py ${rawRootFile} ${digiRootFile} "raw" ${nSamp} ${channelMap} ${logVerbosity} 
 	else
 		echo "Already converted ${rawRootFile} to ${digiRootFile} ; proceeding to the TS steps."
     fi
+	echo "GOT TO HEREEE"
 	#the rest of the steps are way faster (and more likely to have changed) so no need to check if they're redundant
 	timeDecode=$(date +%s)
 	timeReco=$(date +%s)
@@ -136,6 +138,8 @@ for file in $(cat $fileList) ; do
 	$RUN_FIRE $configDir/runTestBeamHitReco.py ${linearRootFile} ${recoSamp}
 	timeHitReco=$(date +%s)
 	$RUN_FIRE $configDir/runTestBeamClustering.py ${hitsRootFile}
+	echo "OKAY TRYING NEW SHIT LOL"
+	$RUN_FIRE $configDir/dataShaper.py ${hitsRootFile}
 	timeCluster=$(date +%s)
 	$RUN_FIRE $configDir/runQIEana.py ${linearRootFile} ${startSamp}
 	timeQIEana=$(date +%s)
