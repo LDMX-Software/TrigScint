@@ -219,6 +219,32 @@ class TrigScintRecHitProducer(ldmxcfg.Producer) :
         rechit.output_collection = 'trigScintRecHitsTag'
         return rechit
 
+class dataShaper(ldmxcfg.Producer) :
+    """Configuration for dataShaper producer for Trigger Scintillators"""
+    def __init__(self,name) :
+        super().__init__(name,'trigscint::dataShaper','TrigScint')
+
+        self.max_cluster_width = 2
+        self.clustering_threshold = 40.  #to add in neighboring channels
+        self.seed_threshold = 60.
+        self.pad_time = -999.
+        self.time_tolerance = 50.
+        self.input_collection = "testBeamHitsUp"
+        self.input_collection2 = "decodedQIEUp"
+        self.input_pass_name = ""
+        self.input_pass_name2 = ""
+        self.output_collection = "TestBeamShapeUp"
+        #whether to apply quality criteria from hit reconstruction
+        self.verbosity = 0
+
+    def up() :
+        """Get the cluster producer for the trigger pad upstream of target"""
+        cluster = dataShaper( 'testBeamClustersUp' )
+        cluster.input_collection = 'testBeamHitsUp'
+        cluster.output_collection= 'TestBeamShapeUp'
+        cluster.pad_time= -999.
+        return cluster
+
 class TrigScintClusterProducer(ldmxcfg.Producer) :
     """Configuration for cluster producer for Trigger Scintillators"""
 
