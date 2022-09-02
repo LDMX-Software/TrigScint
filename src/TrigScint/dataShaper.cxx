@@ -56,7 +56,8 @@ void dataShaper::produce(framework::Event &event) {
 		hitNumInCluster_[I]=0;
 		centroidOfCluster_[I]=0;
 	}
-  }                                                                                             
+  }
+  overflow_=0;
   const auto digisO{event.getCollection<trigscint::TrigScintQIEDigis>(
       input_collection2_, passName2_)};
   for (const auto &digiO : digisO) {
@@ -108,7 +109,7 @@ void dataShaper::produce(framework::Event &event) {
                     // to seeded clusters) already here
       HitNum_+=1;
       int ID = digi.getBarID();
-      integratedCharge_[ID]+=digi.getEnergy();
+      integratedCharge_[ID]+=digi.getQ();
       PENumber_[ID]+=digi.getPE();
       //if(digi.getEnergy()>maxEnergy){
 //	TimeSampleWMaxCharge_[ID]=digi.getTime();
@@ -381,11 +382,13 @@ void dataShaper::produce(framework::Event &event) {
       //cluster.setPE(val_);
       //cluster.setTime(time_ / val_);
       //cluster.setBeamEfrac(beamE_ / valE_);
+      if(CluNum_>=5.0){overflow_=1.0;}else{
       populated_[(int)CluNum_]=1;
       chargeInCluster_[(int)CluNum_]=valE_;
       hitNumInCluster_[(int)CluNum_]=v_addedIndices_.size();
       centroidOfCluster_[(int)CluNum_]=centroid_;
       CluNum_+=1.0;
+      }
       //trigScintClusters.push_back(cluster);
 
       //if (verbose_) cluster.Print();
@@ -490,6 +493,7 @@ void dataShaper::onProcessStart() {
   tree_->Branch("adcList",adcsList_);
   tree_->Branch("tdcList",tdcsList_);
   tree_->Branch("QList",QList_);
+  tree_->Branch("Overflow",&overflow_);
   std::cout<<"Made all branch"<<std::endl;
   return;
 }
