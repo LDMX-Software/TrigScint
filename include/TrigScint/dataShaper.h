@@ -55,7 +55,8 @@ class dataShaper : public framework::Producer {
   float TimeSampleWMaxCharge_[17];
   float CluNum_;
   float HitNum_;
-  
+  float overflow_;
+
   float populated_[5];
   float chargeInCluster_[5];
   float hitNumInCluster_[5];
