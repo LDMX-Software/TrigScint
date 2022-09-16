@@ -4,7 +4,8 @@ p = ldmxcfg.Process('shaper') #
 
 import sys
 
-inputPassName="hits"
+inputPassName="clusters"
+
 nEv=400000
 
 if len(sys.argv) > 2 :
@@ -18,6 +19,7 @@ from LDMX.TrigScint.trigScint import *
 shaper =dataShaper("tShaped")
 shaper.input_pass_name=inputPassName
 shaper.input_pass_name2="unpack"
+shaper.input_pass_name3="hits"
 #tbClustersUp.input_collection="TestBeamHitsUp"
 shaper.pad_time=0.
 shaper.time_tolerance=50.
