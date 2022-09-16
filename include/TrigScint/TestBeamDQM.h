@@ -10,7 +10,7 @@
 //LDMX Framework                               
 #include "Framework/Configure/Parameters.h"
 #include "Framework/EventProcessor.h" //Needed to declare processor
-#include "TrigScint/Event/TestBeamHit.h"
+#include "TrigScint/Event/TrigScintQIEDigis.h"
 #include "TH1.h"
 #include "TH2.h"
 
@@ -48,26 +48,26 @@ namespace trigscint {
 	//configurable parameters
     std::string inputCol_;
     std::string inputPassName_{""};
-	std::vector<double> peds_;
-	int startSample_{0};
+    int startSample_{0};
 
-	//plotting stuff 
-	int evNb;
+    //plotting stuff 
+    int evNb;
     int nEv{200};
     int nChannels{16};
     int nTrkMax{100};
-	TH2F* hEvDisp;
-	TH2F* hEvDispPE;
-
-	int fillNb{0};
-	
-	//match nev, nchan above
-	TH1F* hOut[200][16];;
-	TH1F* hPE[16];
-	TH2F* hPEVsDelta[16];
-	TH2F* hDeltaPEVsDelta[16];
-	TH2F* hPEmaxVsDelta;
-	
+    TH2F* hEvDisp;
+    TH2F* hEvDispPE;
+    
+    int fillNb{0};
+    
+    //match nev, nchan above
+    TH1F* hOut[200][16];;
+    TH1F* hPE[16];
+    TH2F* hPEVsDelta[16];
+    TH2F* hDeltaPEVsDelta[16];
+    TH2F* hPEmaxVsDelta;
+    TH1F* hADC[16];
+    
 
   };
 }
