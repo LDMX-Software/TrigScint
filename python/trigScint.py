@@ -229,10 +229,12 @@ class dataShaper(ldmxcfg.Producer) :
         self.seed_threshold = 60.
         self.pad_time = -999.
         self.time_tolerance = 50.
-        self.input_collection = "testBeamHitsUp"
+        self.input_collection3 = "testBeamHitsUp"
         self.input_collection2 = "decodedQIEUp"
+        self.input_collection = "TestBeamClustersUp"
         self.input_pass_name = ""
         self.input_pass_name2 = ""
+        self.input_pass_name3 = ""
         self.output_collection = "TestBeamShapeUp"
         #whether to apply quality criteria from hit reconstruction
         self.verbosity = 0
