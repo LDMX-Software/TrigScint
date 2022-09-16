@@ -15,7 +15,7 @@
 #include "Framework/Event.h"
 #include "Framework/EventProcessor.h"  //Needed to declare processor
 #include "Recon/Event/EventConstants.h"
-//#include "TrigScint/Event/TrigScintCluster.h"
+#include "TrigScint/Event/TrigScintCluster.h"
 #include "TrigScint/Event/TestBeamHit.h"
 #include "TrigScint/SimQIE.h"
 
@@ -37,8 +37,7 @@ class dataShaper : public framework::Producer {
   /**
    * add a hit at index idx to a cluster
    */
-  virtual void addHit(uint idx, trigscint::TestBeamHit hit);
-
+  
   virtual void onFileOpen();
 
   virtual void onFileClose();
@@ -91,6 +90,7 @@ class dataShaper : public framework::Producer {
   //input collection (hits)
   std::string input_collection_;
   std::string input_collection2_;
+  std::string input_collection3_;
 
   // output collection (clusters)
   std::string output_collection_;
@@ -98,6 +98,8 @@ class dataShaper : public framework::Producer {
   // specific pass name to use for track making
   std::string passName_{""};
   std::string passName2_{""};
+  std::string passName3_{""};
+  
   // cluster channel nb centroid (will be content weighted)
   float centroid_{0.};
 
