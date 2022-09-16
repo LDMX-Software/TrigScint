@@ -117,6 +117,17 @@ class EventReadoutProducer(ldmxcfg.Producer) :
         self.time_shift=5
         self.fiber_to_shift=0
         self.verbose = False
+
+class TestBeamDQM(ldmxcfg.Analyzer) :
+    """Configuration for testbeam QIE digi analyzer for Trigger Scintillators"""
+
+    def __init__(self,name) :
+        super().__init__(name,'trigscint::TestBeamDQM','TrigScint')
+
+        self.inputCollection="decodedQIEUp"
+        self.inputPassName=""   #take any pass
+        self.startSample=15
+        self.pedestals=[0.]
         
 class TestBeamHitProducer(ldmxcfg.Producer) :
     """Configuration for testbeam hit producer for Trigger Scintillators"""
