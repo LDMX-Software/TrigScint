@@ -138,14 +138,14 @@ for file in $(cat $fileList) ; do
 	$RUN_FIRE $configDir/runTestBeamHitReco.py ${linearRootFile} ${recoSamp}
 	timeHitReco=$(date +%s)
 	$RUN_FIRE $configDir/runTestBeamClustering.py ${hitsRootFile}
-	echo "OKAY TRYING NEW SHIT LOL"
-	$RUN_FIRE $configDir/dataShaper.py ${hitsRootFile}
 	timeCluster=$(date +%s)
+    echo "OKAY TRYING NEW SHIT LOL"
+	$RUN_FIRE $configDir/dataShaper.py ${clusterRootFile}
 	$RUN_FIRE $configDir/runQIEana.py ${linearRootFile} ${startSamp}
 	timeQIEana=$(date +%s)
 	$RUN_FIRE $configDir/runTBHitana.py ${hitsRootFile} ${startSamp}
-	timeEnd=$(date +%s)
-	echo
+	timeEnd=$(date +%s)	
+    echo
 	echo "**********************************************************"
 	echo
 	echo "Done reformatting $nEvsRun events from $file in $((timeEnd-timeStart)) seconds: "
