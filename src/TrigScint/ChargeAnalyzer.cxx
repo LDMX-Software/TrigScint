@@ -237,9 +237,9 @@ namespace trigscint {
     hQ_med[iB] = new TH1F(Form("hQ_med_chan%i",iB), Form("Qs for chan%i (Qlow_thr < Q < Qmed_thr); Q[fC]", iB),nQbins_med/10,Qlow_thr,Qmed_thr);
     hQ_high[iB] = new TH1F(Form("hQ_high_chan%i",iB), Form("Qs for chan%i (Q > Qmed_thr); Q[fC]", iB),nQbins_high/15,Qmed_thr,Qhigh_thr);
     hQTot_low[iB] = new TH1F(Form("hQTot_low_chan%i",iB), Form("Total Q for chan%i (Q < Qlow_thr); PE", iB),500,-1,PE_low);
-    hQTot_med[iB] = new TH1F(Form("hQTot_med_chan%i",iB), Form("Total Q for chan%i (Qlow_thr < Q < Qmed_thr); PE", iB),500,PE_low,PE_med1);
-    hQTot_med2[iB] = new TH1F(Form("hQTot_med2_chan%i",iB), Form("Total Q for chan%i (Qmed_thr < Q < Qmed_thr2); PE", iB),500,PE_med1,PE_med2);
-    hQTot_high[iB] = new TH1F(Form("hQTot_high_chan%i",iB), Form("Total Q for chan%i (Q > Qmed_thr); PE", iB),500,PE_med2,PE_high);
+    hQTot_med[iB] = new TH1F(Form("hQTot_med_chan%i",iB), Form("Total Q for chan%i (Qlow_thr < Q < Qmed_thr); PE", iB),100,PE_low,PE_med1);
+    hQTot_med2[iB] = new TH1F(Form("hQTot_med2_chan%i",iB), Form("Total Q for chan%i (Qmed_thr < Q < Qmed_thr2); PE", iB),100,PE_med1,PE_med2);
+    hQTot_high[iB] = new TH1F(Form("hQTot_high_chan%i",iB), Form("Total Q for chan%i (Q > Qmed_thr); PE", iB),100,PE_med2,PE_high);
     //hQAvg_low[iB] = new TH1F(Form("hQAvg_low_chan%i",iB), Form("Average Q for chan%i (Q < Qlow_thr); QAvg", iB),nQbins_low,-5.e2,Qlow_thr);
     //hQAvg_med[iB] = new TH1F(Form("hQAvg_med_chan%i",iB), Form("Average Q for chan%i (Qlow_thr < Q < Qmed_thr); QAvg", iB),nQbins_med/10,Qlow_thr,Qmed_thr);
     //hQAvg_high[iB] = new TH1F(Form("hQAvg_high_chan%i",iB), Form("Average Q for chan%i (Q > Qmed_thr); QAvg", iB),nQbins_high/15,Qmed_thr,Qhigh_thr);
