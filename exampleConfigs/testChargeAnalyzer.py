@@ -2,13 +2,13 @@ from LDMX.Framework import ldmxcfg
 p = ldmxcfg.Process('plot')
 import sys
 from LDMX.TrigScint.trigScint import ChargeAnalyzer
-from LDMX.TrigScint.trigScint import TestBeamHitAnalyzer
+from LDMX.TrigScint.trigScint import HitAnalyzer
 from LDMX.TrigScint.trigScint import ADCAnalyzer
 #from ROOT import TTree, TFile
 #p.maxEvents = 1
 #p.maxEvents = 15071
 #p = ldmxcfg.Process('plot')
-tbh_analyzer = TestBeamHitAnalyzer('Hits')
+tbh_analyzer = HitAnalyzer('Hits')
 tbh_analyzer.inputCollection = "testBeamHitsUp"
 tbh_analyzer.inputPassName = ""
 
