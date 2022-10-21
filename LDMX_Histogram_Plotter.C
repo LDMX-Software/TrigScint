@@ -91,6 +91,14 @@ void HistogramPlotter2D(TFile *hzz, Int_t bins_x, float_t xmin, float_t xmax, In
 		sig->Draw("colz");
 	}
 
+	if (j==4) {
+		sig->SetTitle(plot_title);
+		sig->SetStats(0);
+		gStyle->SetPalette(kCool);
+		//c2->SetLogz();
+		sig->Draw("colz");
+	}
+
 	//sig->Draw();
 
 
@@ -99,7 +107,7 @@ void HistogramPlotter2D(TFile *hzz, Int_t bins_x, float_t xmin, float_t xmax, In
 		c2->Print(outs);
 		hsig.Clear();
 	}
-	if (j==3) {
+	if (j==3 || j==4) {
 		TString outs = "/home/dhruvanshu/ldmx-sw/LDMX_Plots/" + location + plot_title + "_color.png";
 		c2->Print(outs);
 		hsig.Clear();
@@ -114,9 +122,9 @@ void HistogramPlotter2D(TFile *hzz, Int_t bins_x, float_t xmin, float_t xmax, In
 void LDMX_Histogram_Plotter(const char *sigfile)
 {
 	TFile *hzz = TFile::Open(sigfile);
-	TString location_ADC("ADC/");
-	TString location_Charge("Charge/");
-	TString location_Hits("Hits/");
+	TString location_ADC("24-04-2022_08-41-40__277/ADC/");
+	TString location_Charge("24-04-2022_08-41-40__277/Charge/");
+	TString location_Hits("24-04-2022_08-41-40__277/Hits/");
 
 	int Qlow_thr = 2.e2;
     int Qmed_thr = 5.e3;
@@ -157,10 +165,12 @@ void LDMX_Histogram_Plotter(const char *sigfile)
 	TString plot_title_QmedvsTS("hQvsTS_med_chan");
 	TString plot_title_QhighvsTS("hQvsTS_high_chan");
 	TString plot_title_QTotvschan_low("hQTotvschan_low");
+	TString plot_title_QTotvschan_low_ver2("hQTotvschan_low_ver2");
 	TString plot_title_QTotvschan_med("hQTotvschan_med");
 	TString plot_title_QTotvschan_med2("hQTotvschan_med2");
 	TString plot_title_QTotvschan_high("hQTotvschan_high");
 	TString plot_QTotvschan_low = "Charge/" + plot_title_QTotvschan_low;
+	TString plot_QTotvschan_low_ver2 = "Charge/" + plot_title_QTotvschan_low_ver2;
 	TString plot_QTotvschan_med = "Charge/" + plot_title_QTotvschan_med;
 	TString plot_QTotvschan_med2 = "Charge/" + plot_title_QTotvschan_med2;
 	TString plot_QTotvschan_high = "Charge/" + plot_title_QTotvschan_high;
@@ -181,18 +191,25 @@ void LDMX_Histogram_Plotter(const char *sigfile)
 	TString plot_PE2D_med2 = "Hits/" + plot_title_PE2D_med2;
 	TString plot_PE2D_high = "Hits/" + plot_title_PE2D_high;
 	TString plot_PE2D = "Hits/" + plot_title_PE2D;
+	TString plot_title_ChanvsElec("hElecvsChan");
+	TString plot_title_BarvsChan("hBarvsChan");
+	TString plot_ChanvsElec = "Charge/" + plot_title_ChanvsElec;
+	TString plot_BarvsChan = "Charge/" + plot_title_BarvsChan;
 
 	HistogramPlotterLDMX(hzz,80,0,240,plot_title_ADC_total,plot_ADC_total,location_ADC,0);
 	HistogramPlotterLDMX(hzz,20,60,70,plot_title_TDC_total,plot_TDC_total,location_ADC,0);
-	HistogramPlotter2D(hzz,15,0,15,100,-1,PE_low,plot_title_QTotvschan_low,plot_QTotvschan_low,location_Charge,3);
-	HistogramPlotter2D(hzz,15,0,15,100,PE_low,PE_med1,plot_title_QTotvschan_med,plot_QTotvschan_med,location_Charge,3);
-	HistogramPlotter2D(hzz,15,0,15,100,PE_med1,PE_med2,plot_title_QTotvschan_med2,plot_QTotvschan_med2,location_Charge,3);
-	HistogramPlotter2D(hzz,15,0,15,100,PE_med2,PE_high,plot_title_QTotvschan_high,plot_QTotvschan_high,location_Charge,3);
-	HistogramPlotter2D(hzz,15,0,15,nPE_bins,0,PE_low,plot_title_PE2D_low,plot_PE2D_low,location_Hits,0);
-	HistogramPlotter2D(hzz,15,0,15,nPE_bins,PE_low,PE_med1,plot_title_PE2D_med1,plot_PE2D_med1,location_Hits,0);
-	HistogramPlotter2D(hzz,15,0,15,nPE_bins,PE_med1,PE_med2,plot_title_PE2D_med2,plot_PE2D_med2,location_Hits,0);
-	HistogramPlotter2D(hzz,15,0,15,nPE_bins,PE_med2,PEmax,plot_title_PE2D_high,plot_PE2D_high,location_Hits,0);
-	HistogramPlotter2D(hzz,15,0,15,nPE_bins,0,PEmax,plot_title_PE2D,plot_PE2D,location_Hits,0);
+	HistogramPlotter2D(hzz,15,0,15,100,-1,PE_low,plot_title_QTotvschan_low,plot_QTotvschan_low,location_Charge,0);
+	HistogramPlotter2D(hzz,15,0,15,100,0,PE_low,plot_title_QTotvschan_low_ver2,plot_QTotvschan_low_ver2,location_Charge,3);
+	HistogramPlotter2D(hzz,15,0,15,100,PE_low,PE_med1,plot_title_QTotvschan_med,plot_QTotvschan_med,location_Charge,0);
+	HistogramPlotter2D(hzz,15,0,15,100,PE_med1,PE_med2,plot_title_QTotvschan_med2,plot_QTotvschan_med2,location_Charge,0);
+	HistogramPlotter2D(hzz,15,0,15,100,PE_med2,PE_high,plot_title_QTotvschan_high,plot_QTotvschan_high,location_Charge,0);
+	HistogramPlotter2D(hzz,15,0,15,nPE_bins,0,PE_low,plot_title_PE2D_low,plot_PE2D_low,location_Hits,3);
+	HistogramPlotter2D(hzz,15,0,15,nPE_bins,PE_low,PE_med1,plot_title_PE2D_med1,plot_PE2D_med1,location_Hits,3);
+	HistogramPlotter2D(hzz,15,0,15,nPE_bins,PE_med1,PE_med2,plot_title_PE2D_med2,plot_PE2D_med2,location_Hits,3);
+	HistogramPlotter2D(hzz,15,0,15,nPE_bins,PE_med2,PEmax,plot_title_PE2D_high,plot_PE2D_high,location_Hits,3);
+	HistogramPlotter2D(hzz,15,0,15,nPE_bins,0,PEmax,plot_title_PE2D,plot_PE2D,location_Hits,3);
+	HistogramPlotter2D(hzz,15,0,15,15,0,15,plot_title_ChanvsElec,plot_ChanvsElec,location_Charge,4);
+	HistogramPlotter2D(hzz,15,0,15,15,0,15,plot_title_BarvsChan,plot_BarvsChan,location_Charge,4);
 
 	for(unsigned int iB=0;iB < 16; iB++){
 		TString plot_ADC = "ADC/" + plot_title_ADC + iB;
