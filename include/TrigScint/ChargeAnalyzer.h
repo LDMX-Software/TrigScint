@@ -12,8 +12,10 @@
 #include "Framework/EventProcessor.h" //Needed to declare processor
 #include "TrigScint/Event/EventReadout.h"
 #include "TrigScint/Event/TrigScintQIEDigis.h"
+#include "TrigScint/Event/TestBeamHit.h"
 #include "TH1.h"
 #include "TH2.h"
+#include "TROOT.h"
 
 namespace trigscint {
 
@@ -73,6 +75,9 @@ namespace trigscint {
     	int PE_med2 = 150;
     	int PE_high = 400;
     	
+    	//int S=0;
+    	//int S1=0;
+    	
 	TH1F* hQ_low[16];
 	TH1F* hQ_med[16];
 	TH1F* hQ_high[16];
@@ -95,6 +100,7 @@ namespace trigscint {
 	//TH1F* hQMed_low[16];
 	//TH1F* hQMed_med[16];
 	//TH1F* hQMed_high[16];
+	TH2F* hQTotvschan_low_ver2;
 	TH2F* hQTotvschan_low;
 	TH2F* hQTotvschan_med;
 	TH2F* hQTotvschan_med2;
@@ -114,6 +120,9 @@ namespace trigscint {
 	//TH1F* hQTot;
 	TH1F* hQTot_channel[16];
 	TH2F* hQTotvschan;
+	TH1F* hQChannel;
+	TH2F *hElecvsChan;
+	TH2F *hBarvsChan;
 	
 	//TH2F* hTDCfireChanvsEvent;
     double yOffset_{35.};
