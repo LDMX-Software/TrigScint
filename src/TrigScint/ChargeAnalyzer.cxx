@@ -30,14 +30,19 @@ namespace trigscint {
 
     //std::cout << "getting collection" << std::endl;
     const auto channels{event.getCollection<trigscint::EventReadout>(inputCol_, inputPassName_)};
+    const auto chunnels{event.getCollection<trigscint::TestBeamHit>("testBeamHitsUp", inputPassName_)};
     //std::cout << "got..." << std::endl;
   int evNb = event.getEventNumber();
   int nChannels = channels.size();
-  //int S=0;
+  int nChunnels = chunnels.size();
+  int S=0;
   
+  //TTree *tree = new TTree("tree", "tree");
   for (auto chan : channels) {
     //int bar = chan.getBarID();
     int bar = chan.getChanID();
+    int elec = chan.getElecID();
+    //tree->Branch("bar", &bar, "bar/I");
     std::vector<float> q = chan.getQ();
     float QTot = chan.getTotQ();
     float QAvg = chan.getAvgQ();
@@ -48,6 +53,40 @@ namespace trigscint {
     float e = 1.6e-19;
 
     PE = (QTot*1.e-15)/(e*gain_[0]);
+    hBarvsChan->SetMarkerStyle(45);
+    hBarvsChan->SetMarkerColor(kBlue);
+    hBarvsChan->SetMarkerSize(0.3);
+
+    if (bar < 12 && bar > -1) {
+        S+=1;
+        //std::cout << "Incrementing S = " << S << std::endl;
+        int S1=1;
+        int S2=0;
+        for (auto chun : chunnels) {
+          int bur = chun.getBarID();
+          int K = S - S1;
+          if (K == 0) {
+            hBarvsChan->Fill(bur,bar);
+            //std::cout << "Filled" << std::endl;
+            S2 = S2 + 1;
+          }
+          //std::cout << S << "%" << S1 << ";" << S2 << ":" << bar << "=" << bur << std::endl;
+          S1 = S1 + 1;
+          if (S2 == 1) {
+            //std::cout << "Exiting Chunnel loop" << std::endl;
+            //std::cout << S << "%" << S1 << ";" << S2 << ":" << bar << "=" << bur << std::endl;
+            //S++;
+            break;
+          }
+       }
+    }
+    //std::cout << "Value of S after exiting loop = " << S << "\n\n" << std::endl;
+    hQChannel->Fill(bar);
+    //tree->Fill();
+    hElecvsChan->SetMarkerStyle(45);
+    hElecvsChan->SetMarkerColor(kBlue);
+    hElecvsChan->SetMarkerSize(0.3);
+    hElecvsChan->Fill(elec,bar);
 
     hQTotvschan->SetMarkerStyle(45);
     hQTotvschan->SetMarkerColor(kBlue);
@@ -60,8 +99,12 @@ namespace trigscint {
       hQTotvschan_low->SetMarkerStyle(45);
       hQTotvschan_low->SetMarkerColor(kBlue);
       hQTotvschan_low->SetMarkerSize(0.3);
+      hQTotvschan_low_ver2->SetMarkerStyle(45);
+      hQTotvschan_low_ver2->SetMarkerColor(kBlue);
+      hQTotvschan_low_ver2->SetMarkerSize(0.3);
       hQTot_low[bar]->Fill(PE);
       hQTotvschan_low->Fill(bar,PE);
+      hQTotvschan_low_ver2->Fill(bar,PE);
     }
     if (PE > PE_low && PE < PE_med1) {
       hQTotvschan_med->SetMarkerStyle(45);
@@ -230,9 +273,10 @@ namespace trigscint {
   int nQbins_high = (Qhigh_thr-Qmed_thr);
 
   for (int iB=0; iB<nChannels; iB++) {
-    hQvsTS_low[iB] = new TH2F(Form("hQvsTS_low_chan%i",iB),Form("Charge vs timesample for chan%i (Q < Qlow_thr); Timesample ; Q[fC]", iB),30,0,29,nQbins_low,-100,Qlow_thr);
-    hQvsTS_med[iB] = new TH2F(Form("hQvsTS_med_chan%i",iB),Form("Charge vs timesample for chan%i; Timesample ; Q[fC]", iB),30,0,29,nQbins_med/10,Qlow_thr,Qmed_thr);
-    hQvsTS_high[iB] = new TH2F(Form("hQvsTS_high_chan%i",iB),Form("Charge vs timesample for chan%i; Timesample ; Q[fC]", iB),30,0,29,nQbins_high/15,Qmed_thr,Qhigh_thr);
+    hQvsTS_low[iB] = new TH2F(Form("hQvsTS_low_chan%i",iB),Form("Charge vs timesample for chan%i (Q < Qlow_thr); Timesample ; Q[fC]", iB),29,0,29,nQbins_low,-100,Qlow_thr);
+    hQvsTS_med[iB] = new TH2F(Form("hQvsTS_med_chan%i",iB),Form("Charge vs timesample for chan%i; Timesample ; Q[fC]", iB),29,0,29,nQbins_med/10,Qlow_thr,Qmed_thr);
+    hQvsTS_high[iB] = new TH2F(Form("hQvsTS_high_chan%i",iB),Form("Charge vs timesample for chan%i; Timesample ; Q[fC]", iB),29,0,29,nQbins_high/15,Qmed_thr,Qhigh_thr);
+    hQChannel = new TH1F(Form("Channel iD"), Form("Channel iD"),15,0,15);
     hQ_low[iB] = new TH1F(Form("hQ_low_chan%i",iB), Form("Qs for chan%i (Q < Qlow_thr); Q[fC]", iB),nQbins_low,-100,Qlow_thr);
     hQ_med[iB] = new TH1F(Form("hQ_med_chan%i",iB), Form("Qs for chan%i (Qlow_thr < Q < Qmed_thr); Q[fC]", iB),nQbins_med/10,Qlow_thr,Qmed_thr);
     hQ_high[iB] = new TH1F(Form("hQ_high_chan%i",iB), Form("Qs for chan%i (Q > Qmed_thr); Q[fC]", iB),nQbins_high/15,Qmed_thr,Qhigh_thr);
@@ -252,10 +296,11 @@ namespace trigscint {
     //hQMed_low[iB] = new TH1F(Form("hQMed_low_chan%i",iB), Form("Median Q for chan%i (Q < Qlow_thr); QMed", iB),nQbins_low,-5.e2,Qlow_thr);
     //hQMed_med[iB] = new TH1F(Form("hQMed_med_chan%i",iB), Form("Median Q for chan%i (Qlow_thr < Q < Qmed_thr); QMed", iB),nQbins_med/10,Qlow_thr,Qmed_thr);
     //hQMed_high[iB] = new TH1F(Form("hQMed_high_chan%i",iB), Form("Median Q for chan%i (Q > Qmed_thr); QMed", iB),nQbins_high/15,Qmed_thr,Qhigh_thr);
-    hQTotvschan_low = new TH2F(Form("hQTotvschan_low"),Form("QTot vs channel (Q < Qlow_thr); channel ; PE"),16,0,15,100,-1,PE_low);
-    hQTotvschan_med = new TH2F(Form("hQTotvschan_med"),Form("QTot vs channel (Qlow_thr < Q < Qmed_thr) ; channel ; PE"),16,0,15,100,PE_low,PE_med1);
-    hQTotvschan_med2 = new TH2F(Form("hQTotvschan_med2"),Form("QTot vs channel (Qmed_thr < Q < Qmed_thr2) ; channel ; PE"),16,0,15,100,PE_med1,PE_med2);
-    hQTotvschan_high = new TH2F(Form("hQTotvschan_high"),Form("QTot vs channel (Q > Qmed_thr); channel ; PE"),16,0,15,100,PE_med2,PE_high);
+    hQTotvschan_low = new TH2F(Form("hQTotvschan_low"),Form("QTot vs channel (Q < Qlow_thr); channel ; PE"),15,0,15,100,-1,PE_low);
+    hQTotvschan_low_ver2 = new TH2F(Form("hQTotvschan_low_ver2"),Form("QTot vs channel (0 < Q < Qlow_thr); channel ; PE"),15,0,15,100,0,PE_low);
+    hQTotvschan_med = new TH2F(Form("hQTotvschan_med"),Form("QTot vs channel (Qlow_thr < Q < Qmed_thr) ; channel ; PE"),15,0,15,100,PE_low,PE_med1);
+    hQTotvschan_med2 = new TH2F(Form("hQTotvschan_med2"),Form("QTot vs channel (Qmed_thr < Q < Qmed_thr2) ; channel ; PE"),15,0,15,100,PE_med1,PE_med2);
+    hQTotvschan_high = new TH2F(Form("hQTotvschan_high"),Form("QTot vs channel (Q > Qmed_thr); channel ; PE"),15,0,15,100,PE_med2,PE_high);
     //hQAvgvschan_low = new TH2F(Form("hQAvgvschan_low"),Form("QAvg vs channel (Q < Qlow_thr); channel ; QAvg"),16,0,15,nQbins_low,-5.e2,Qlow_thr);
     //hQAvgvschan_med = new TH2F(Form("hQAvgvschan_med"),Form("QAvg vs channel (Qlow_thr < Q < Qmed_thr); channel ; QAvg"),16,0,15,nQbins_med/10,Qlow_thr,Qmed_thr);
     //hQAvgvschan_high = new TH2F(Form("hQAvgvschan_high"),Form("QAvg vs channel (Q > Qmed_thr); channel ; QAvg"),16,0,15,nQbins_high/15,Qmed_thr,Qhigh_thr);
@@ -270,7 +315,9 @@ namespace trigscint {
     //hQMedvschan_high = new TH2F(Form("hQMedvschan_high"),Form("QMed vs channel (Q > Qmed_thr); channel ; QMed"),16,0,15,nQbins_high/15,Qmed_thr,Qhigh_thr);
     //hQTot = new TH1F(Form("hQTotal"), Form("Total charge for all channels; PE"),500,-10,400);
     hQTot_channel[iB] = new TH1F(Form("hQTotal_channel%i",iB), Form("Total charge for channel%i; PE",iB),100,-10,400);
-    hQTotvschan = new TH2F(Form("hQTotvschan"),Form("QTot vs channel; channel ; PE"),16,0,15,100,-10,400);
+    hQTotvschan = new TH2F(Form("hQTotvschan"),Form("QTot vs channel; channel ; PE"),15,0,15,100,-10,400);
+    hElecvsChan = new TH2F(Form("hElecvsChan"),Form("Electronics ID vs Channel ID; elecID ; chanID"), 15,0,15,15,0,15);
+    hBarvsChan = new TH2F(Form("hBarvsChan"),Form("Bar ID vs Channel ID; barID ; chanID"), 15,0,15,15,0,15);
   }
 
   fillNb=0;
@@ -282,7 +329,7 @@ namespace trigscint {
   
 
   void ChargeAnalyzer::onProcessEnd() {
-
+    //std::cout << "\n\n Number of events extra in ChannelID = " << S << "\n\n" << std::endl;
     return;
   }
 
