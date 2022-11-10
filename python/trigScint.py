@@ -233,7 +233,7 @@ class TrigScintClusterProducer(ldmxcfg.Producer) :
         self.verbosity = 0
 
     def pad1() :
-        """Get the cluster producer for the trigger pad downstream of target"""
+        """Get the cluster producer for the trigger pad most upstream of tagger"""
         cluster = TrigScintClusterProducer( 'trigScintClustersPad1' )
         cluster.input_collection = 'trigScintDigisPad1'
         cluster.output_collection= 'TriggerPad1Clusters'
@@ -249,7 +249,7 @@ class TrigScintClusterProducer(ldmxcfg.Producer) :
         return cluster
 
     def pad3() :
-        """Get the cluster producer for the trigger pad most upstream of tagger"""
+        """Get the cluster producer for the trigger pad just upstream of target"""
         cluster = TrigScintClusterProducer( 'trigScintClustersPad3' )
         cluster.input_collection = 'trigScintDigisPad3'
         cluster.output_collection= 'TriggerPad3Clusters'
@@ -282,7 +282,7 @@ class QIEAnalyzer(ldmxcfg.Analyzer) :
         self.inputCollection="QIEsamplesPad1"
         self.inputPassName=""   #take any pass                                                                                         
         self.startSample=2      #first time sample included in reformatting 
-        self.gain = [2.e6]*16      # SiPM Gain  //TODO: vector 
+        self.gain = [2.e6]*16      # SiPM Gain  
         self.pedestals=[
             -4.6, #0.6,
             -2.6, #4.4,
