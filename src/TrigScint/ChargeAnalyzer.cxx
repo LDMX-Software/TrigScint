@@ -53,6 +53,7 @@ namespace trigscint {
     float e = 1.6e-19;
 
     PE = (QTot*1.e-15)/(e*gain_[0]);
+    //PE_reeval_gain = (QTot*1.e-15)/(e*gain_[bar]);
     hBarvsChan->SetMarkerStyle(45);
     hBarvsChan->SetMarkerColor(kBlue);
     hBarvsChan->SetMarkerSize(0.3);
@@ -113,6 +114,13 @@ namespace trigscint {
       hQTot_med[bar]->Fill(PE);
       hQTotvschan_med->Fill(bar,PE);
     }
+    //if (PE_reeval_gain > PE_low && PE_reeval_gain < PE_med1) {
+      //hQTotvschan_med_reeval_gain->SetMarkerStyle(45);
+      //hQTotvschan_med_reeval_gain->SetMarkerColor(kBlue);
+      //hQTotvschan_med_reeval_gain->SetMarkerSize(0.3);
+      //hQTot_med[bar]->Fill(PE);
+      //hQTotvschan_med_reeval_gain->Fill(bar,PE_reeval_gain);
+    //}
     if (PE > PE_med1 && PE < PE_med2) {
       hQTotvschan_med2->SetMarkerStyle(45);
       hQTotvschan_med2->SetMarkerColor(kBlue);
@@ -126,6 +134,13 @@ namespace trigscint {
       hQTotvschan_high->SetMarkerSize(0.3);
       hQTot_high[bar]->Fill(PE);
       hQTotvschan_high->Fill(bar,PE);
+    }
+    if (PE > 50) {
+      hQTotvschan_MIPcut->SetMarkerStyle(45);
+      hQTotvschan_MIPcut->SetMarkerColor(kBlue);
+      hQTotvschan_MIPcut->SetMarkerSize(0.3);
+      hQTot_MIPcut[bar]->Fill(PE);
+      hQTotvschan_MIPcut->Fill(bar,PE);
     }
     //hQTotvsTS[bar]->Fill()
 
@@ -282,6 +297,7 @@ namespace trigscint {
     hQ_high[iB] = new TH1F(Form("hQ_high_chan%i",iB), Form("Qs for chan%i (Q > Qmed_thr); Q[fC]", iB),nQbins_high/15,Qmed_thr,Qhigh_thr);
     hQTot_low[iB] = new TH1F(Form("hQTot_low_chan%i",iB), Form("Total Q for chan%i (Q < Qlow_thr); PE", iB),500,-1,PE_low);
     hQTot_med[iB] = new TH1F(Form("hQTot_med_chan%i",iB), Form("Total Q for chan%i (Qlow_thr < Q < Qmed_thr); PE", iB),100,PE_low,PE_med1);
+    hQTot_MIPcut[iB] = new TH1F(Form("hQTot_med_chan_MIPcut%i",iB), Form("Total Q for chan%i for MIP cut; PE", iB),100,50,PE_high);
     hQTot_med2[iB] = new TH1F(Form("hQTot_med2_chan%i",iB), Form("Total Q for chan%i (Qmed_thr < Q < Qmed_thr2); PE", iB),100,PE_med1,PE_med2);
     hQTot_high[iB] = new TH1F(Form("hQTot_high_chan%i",iB), Form("Total Q for chan%i (Q > Qmed_thr); PE", iB),100,PE_med2,PE_high);
     //hQAvg_low[iB] = new TH1F(Form("hQAvg_low_chan%i",iB), Form("Average Q for chan%i (Q < Qlow_thr); QAvg", iB),nQbins_low,-5.e2,Qlow_thr);
@@ -299,6 +315,8 @@ namespace trigscint {
     hQTotvschan_low = new TH2F(Form("hQTotvschan_low"),Form("QTot vs channel (Q < Qlow_thr); channel ; PE"),15,0,15,100,-1,PE_low);
     hQTotvschan_low_ver2 = new TH2F(Form("hQTotvschan_low_ver2"),Form("QTot vs channel (0 < Q < Qlow_thr); channel ; PE"),15,0,15,100,0,PE_low);
     hQTotvschan_med = new TH2F(Form("hQTotvschan_med"),Form("QTot vs channel (Qlow_thr < Q < Qmed_thr) ; channel ; PE"),15,0,15,100,PE_low,PE_med1);
+    hQTotvschan_MIPcut = new TH2F(Form("hQTotvschan_MIPcut"),Form("QTot vs channel for MIP cuts ; channel ; PE"),15,0,15,100,50,PE_high);
+    //hQTotvschan_med_reeval_gain = new TH2F(Form("hQTotvschan_med_reeval_gain"),Form("QTot vs channel (Qlow_thr < Q < Qmed_thr) reevaluated using different gains; channel ; PE"),15,0,15,100,PE_low,PE_med1);
     hQTotvschan_med2 = new TH2F(Form("hQTotvschan_med2"),Form("QTot vs channel (Qmed_thr < Q < Qmed_thr2) ; channel ; PE"),15,0,15,100,PE_med1,PE_med2);
     hQTotvschan_high = new TH2F(Form("hQTotvschan_high"),Form("QTot vs channel (Q > Qmed_thr); channel ; PE"),15,0,15,100,PE_med2,PE_high);
     //hQAvgvschan_low = new TH2F(Form("hQAvgvschan_low"),Form("QAvg vs channel (Q < Qlow_thr); channel ; QAvg"),16,0,15,nQbins_low,-5.e2,Qlow_thr);
