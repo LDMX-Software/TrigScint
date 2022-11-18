@@ -86,6 +86,7 @@ namespace trigscint {
 	TH2F* hQvsTS_high[16];
 	TH1F* hQTot_low[16];
 	TH1F* hQTot_med[16];
+	TH1F* hQTot_MIPcut[16];
 	TH1F* hQTot_med2[16];
 	TH1F* hQTot_high[16];
 	//TH1F* hQAvg_low[16];
@@ -103,6 +104,8 @@ namespace trigscint {
 	TH2F* hQTotvschan_low_ver2;
 	TH2F* hQTotvschan_low;
 	TH2F* hQTotvschan_med;
+	TH2F* hQTotvschan_MIPcut;
+	//TH2F* hQTotvschan_med_reeval_gain;
 	TH2F* hQTotvschan_med2;
 	TH2F* hQTotvschan_high;
 	//TH2F* hQAvgvschan_low;
