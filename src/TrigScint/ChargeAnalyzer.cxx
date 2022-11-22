@@ -32,9 +32,12 @@ namespace trigscint {
     const auto channels{event.getCollection<trigscint::EventReadout>(inputCol_, inputPassName_)};
     const auto chunnels{event.getCollection<trigscint::TestBeamHit>("testBeamHitsUp", inputPassName_)};
     //std::cout << "got..." << std::endl;
-  int evNb = event.getEventNumber();
+  evNb = event.getEventNumber();
   int nChannels = channels.size();
   int nChunnels = chunnels.size();
+  std::vector<int> BarTrack;
+  std::vector<int> Bar0_charge;
+  std::vector<int> Bar1_charge;
   int S=0;
   
   //TTree *tree = new TTree("tree", "tree");
@@ -44,6 +47,11 @@ namespace trigscint {
     int elec = chan.getElecID();
     //tree->Branch("bar", &bar, "bar/I");
     std::vector<float> q = chan.getQ();
+    if (q.size() != 0) {   //Selecting events for which some charge is deposited
+      BarTrack.push_back(bar); //Picking those bars where charge is deposited
+      if (bar == 0) Bar0_charge.push_back(bar); //Specifically selecting bar 0
+      if (bar == 1) Bar1_charge.push_back(bar); //Specifically selecting bar 1
+    }
     float QTot = chan.getTotQ();
     float QAvg = chan.getAvgQ();
     float QMin = chan.getMinQ();
@@ -257,6 +265,23 @@ namespace trigscint {
       }
     
   }
+  //std::cout << "Number of events=" << evNb << std::endl; 
+  if (BarTrack.size() > 0) {  //Checking events for which "some" charge is deposited
+    Si += 1;  //Counting the number of events for which "some" charge is deposited
+    BarTrack.clear();
+  }
+  else {
+    EventsMiss.push_back(evNb); //If no charge is deposited by the event, this vector stores the respective event number
+  }
+  if (Bar0_charge.size() > 0) {
+    Sbar0 += 1; //Counting the events which deposited charge in bar 0
+    Bar0_charge.clear();
+  }
+
+  if (Bar1_charge.size() > 0) {
+    Sbar1 += 1; //Counting events which deposited charge in bar 1
+    Bar1_charge.clear();
+  }
   return;
   }
 
@@ -273,7 +298,7 @@ namespace trigscint {
   
   void ChargeAnalyzer::onProcessStart() {
     std::cout << "\n\n Process starts! My analyzer should do something -- like print this \n\n" << std::endl;
-
+    EventsMiss.clear();
     getHistoDirectory();
 
   
@@ -286,6 +311,9 @@ namespace trigscint {
   int nQbins_low = Qlow_thr;
   int nQbins_med = (Qmed_thr-Qlow_thr);
   int nQbins_high = (Qhigh_thr-Qmed_thr);
+
+  //fstream file;
+  //file.open("/home/dhruvanshu/LDMX_Analysis_Files/NoCharge.txt",ios::out);
 
   for (int iB=0; iB<nChannels; iB++) {
     hQvsTS_low[iB] = new TH2F(Form("hQvsTS_low_chan%i",iB),Form("Charge vs timesample for chan%i (Q < Qlow_thr); Timesample ; Q[fC]", iB),29,0,29,nQbins_low,-100,Qlow_thr);
@@ -332,14 +360,14 @@ namespace trigscint {
     //hQMedvschan_med = new TH2F(Form("hQMedvschan_med"),Form("QMed vs channel (Qlow_thr < Q < Qmed_thr); channel ; QMed"),16,0,15,nQbins_med/10,Qlow_thr,Qmed_thr);
     //hQMedvschan_high = new TH2F(Form("hQMedvschan_high"),Form("QMed vs channel (Q > Qmed_thr); channel ; QMed"),16,0,15,nQbins_high/15,Qmed_thr,Qhigh_thr);
     //hQTot = new TH1F(Form("hQTotal"), Form("Total charge for all channels; PE"),500,-10,400);
-    hQTot_channel[iB] = new TH1F(Form("hQTotal_channel%i",iB), Form("Total charge for channel%i; PE",iB),100,-10,400);
+    hQTot_channel[iB] = new TH1F(Form("hQTotal_channel%i",iB), Form("Total charge for channel%i; PE",iB),100,-100,400);
     hQTotvschan = new TH2F(Form("hQTotvschan"),Form("QTot vs channel; channel ; PE"),15,0,15,100,-10,400);
     hElecvsChan = new TH2F(Form("hElecvsChan"),Form("Electronics ID vs Channel ID; elecID ; chanID"), 15,0,15,15,0,15);
     hBarvsChan = new TH2F(Form("hBarvsChan"),Form("Bar ID vs Channel ID; barID ; chanID"), 15,0,15,15,0,15);
   }
 
   fillNb=0;
-  evNb=0;
+  //evNb=0;
 
   
     return;
@@ -348,6 +376,13 @@ namespace trigscint {
 
   void ChargeAnalyzer::onProcessEnd() {
     //std::cout << "\n\n Number of events extra in ChannelID = " << S << "\n\n" << std::endl;
+    std::cout << "Number of events processed : " << evNb << "\n\n" << std::endl; //It gives off the event number last processed
+    std::cout << "Number of events processed as per charge : " << Si << std::endl; // This number gives the number of events which deposited charge in some (if not all) channels
+    std::cout << "Number of events skipped : " << EventsMiss.size() << std::endl; //Size of this vector gives the number of events which deposited no charge in any channel
+    std::cout << "Example event iD which is missed : " << EventsMiss.at(50) << std::endl; //Just printing out one example event to check in original data file
+    EventsMiss.clear();
+    std::cout << "Number of events passing through channel 0:" << Sbar0 << std::endl; //Prints out number of events depositing charge in bar 0
+    std::cout << "Number of events passing through channel 1:" << Sbar1 << std::endl; //Prints out number of events depositing charge in bar 1
     return;
   }
 
