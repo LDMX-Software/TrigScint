@@ -75,6 +75,12 @@ namespace trigscint {
     	int PE_med2 = 150;
     	int PE_high = 400;
     	
+    	int Si=0;
+    	int Sbar0=0;
+    	int Sbar1=0;
+    	std::vector<int> EventsMiss;
+    	
+    	
     	//int S=0;
     	//int S1=0;
     	
