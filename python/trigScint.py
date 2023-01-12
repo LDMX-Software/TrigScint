@@ -393,7 +393,36 @@ class ChargeAnalyzer(ldmxcfg.Analyzer) :
             1.3,  #-1.5,   # #14 -- uninstrumented
             1.3   #1.6     # #15 -- uninstrumented
         ]
-        
+
+class ChargeAnalyzerCrazy(ldmxcfg.Analyzer) :
+    """Configuration for Charge Analyzer Crazy script"""
+    
+    def __init__(self,name) :
+    	super().__init__(name,'trigscint::ChargeAnalyzerCrazy','TrigScint')
+    	
+    	self.inputCollection="QIEsamplesUp"
+    	self.inputPassName=""
+    	self.startSample=2
+    	self.gain = [2.e6]*16
+    	self.pedestals=[
+            -4.6, #0.6,
+            -2.6, #4.4,
+            -0.6, #-1.25,
+            4.5,  #3.9, 	 # #3
+            1.9,  #10000., # #4: (used to be) dead channel during test beam
+            -2.2, #-2.1,   # #5 
+            0.9,  #2.9,    # #6
+            -1.2, #-2,     # #7
+            4.8,  #-0.4,   # #8
+            -4.4, #-1.1,   # #9: dead channel in TTU teststand setup
+            -0.1, #1.5,    # #10
+            -1.7, #2.0,    # #11
+            3.3,  #3.7,    # #12 -- uninstrumented
+            -0.3, #2.8,    # #13 -- uninstrumented
+            1.3,  #-1.5,   # #14 -- uninstrumented
+            1.3   #1.6     # #15 -- uninstrumented
+        ]        
+
 class ADCAnalyzer(ldmxcfg.Analyzer) :
     """Configuration for Charge Analyzer script"""
     
@@ -428,6 +457,34 @@ class HitAnalyzer(ldmxcfg.Analyzer) :
         
     def __init__(self,name) :
         super().__init__(name,'trigscint::HitAnalyzer','TrigScint')
+
+        self.inputCollection="testBeamHitsUp"
+        self.inputPassName=""   #take any pass                                                                                         
+        self.startSample=2      #first time sample included in reformatting 
+        self.pedestals=[
+            -4.6, #0.6,
+            -2.6, #4.4,
+            -0.6, #-1.25,
+            4.5,  #3.9, 	 # #3
+            1.9,  #10000., # #4: (used to be) dead channel during test beam
+            -2.2, #-2.1,   # #5 
+            0.9,  #2.9,    # #6
+            -1.2, #-2,     # #7
+            4.8,  #-0.4,   # #8
+            -4.4, #-1.1,   # #9: dead channel in TTU teststand setup
+            -0.1, #1.5,    # #10
+            -1.7, #2.0,    # #11
+            3.3,  #3.7,    # #12 -- uninstrumented
+            -0.3, #2.8,    # #13 -- uninstrumented
+            1.3,  #-1.5,   # #14 -- uninstrumented
+            1.3   #1.6     # #15 -- uninstrumented
+        ]
+        
+class TestBeamDecideWidth(ldmxcfg.Analyzer) :
+    """Configuration for linearized QIE analyzer for Trigger Scintillators"""
+        
+    def __init__(self,name) :
+        super().__init__(name,'trigscint::TestBeamDecideWidth','TrigScint')
 
         self.inputCollection="testBeamHitsUp"
         self.inputPassName=""   #take any pass                                                                                         
