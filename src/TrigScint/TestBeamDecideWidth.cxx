@@ -77,11 +77,6 @@ void DrawGraph(std::pair<std::vector<float>,std::vector<float>> Y, int title) //
 float MakeHistograms(std::vector<std::vector<float>> Z, TH1F* hist, int histtitle) //Plots histograms to depict number of events favoring a given integration window, and lastly returning the average window as output.
 {
 	TCanvas *c2 = new TCanvas();
-	gStyle->SetLabelSize(0.048,"x");
-	gStyle->SetLabelSize(0.048,"y");
-	gStyle->SetTitleSize(0.045,"x");
-	gStyle->SetTitleSize(0.045,"y");
-	gStyle->SetOptStat(1111111);
 	std::vector<float> AvgIndex;
 	std::vector<float> WQ = Z[0];
 	for(int qi=0; qi < WQ.size()-1; qi++){ 	//Looping over events corresponding to a channel
@@ -201,6 +196,11 @@ void TestBeamDecideWidth::onFileClose() {
   
 void TestBeamDecideWidth::onProcessStart() {
   std::cout << "\n\n Process starts! My analyzer should do something -- like print this \n\n" << std::endl;
+	gStyle->SetLabelSize(0.042,"x");
+	gStyle->SetLabelSize(0.042,"y");
+	gStyle->SetTitleSize(0.040,"x");
+	gStyle->SetTitleSize(0.040,"y");
+	gStyle->SetOptStat(1111111);
   for (int i=0;i<widthlimit;i++) {
 		TotQChan0.push_back({0});
 		TotQChan1.push_back({0});
@@ -255,6 +255,8 @@ void TestBeamDecideWidth::onProcessEnd() {
 	auto QWidth11 = AnalyseWidthData(TotQChan11);
 	DrawGraph(QWidth11,11);
 	std::vector<std::vector<float>> HistArray[12] = {TotQChan0,TotQChan1,TotQChan2,TotQChan3,TotQChan4,TotQChan5,TotQChan6,TotQChan7,TotQChan8,TotQChan9,TotQChan10,TotQChan11};
+  std::vector<float> AverageIntegrationWindow;
+  std::vector<int> ChannelVector = {0,1,2,3,4,5,6,7,8,9,10,11};
   for(int hii=0;hii<12;hii++)
   {
   	if(HistArray[hii].size() == 0) {
@@ -263,12 +265,35 @@ void TestBeamDecideWidth::onProcessEnd() {
   	else{
   		std::cout << "Making final histogram for channel " << hii << std::endl;
   		float AvgOutput = MakeHistograms(HistArray[hii],ChannelWidthData[hii],hii);
-  		if (hii != 8) { file << hii << "," << int(AvgOutput) << "\n"; }  //Well, channel 8 is broken so not storing its info.		
+  		if (hii != 8) { 
+  			file << hii << "," << int(AvgOutput) << "\n"; 
+  			AverageIntegrationWindow.push_back(int(AvgOutput));
+  		}  //Well, channel 8 is broken so not storing its info.
+  		else { AverageIntegrationWindow.push_back(0) ;}		
   		std::cout << "Histogram made" << std::endl;
   	}
   }
   std::cout << TotQChan0.size() << std::endl;
   file.close();
+
+  //FInally, plotting the start samples averaged out for all channels as a bar graph.
+  TCanvas *c3 = new TCanvas();
+  auto gr2 = new TGraph();
+  gr2->SetLineWidth(4);
+  gr2->SetFillColorAlpha(kRed,0.35);
+  gr2->GetXaxis()->SetTitle("Channel ID");
+  gr2->GetYaxis()->SetTitle("Start Sample");
+  gr2->SetTitle("Start Samples of integration windows for all channels");
+  gr2->SetMarkerColor(4);
+	gr2->SetMarkerStyle(20);
+  for(int g2=0;g2<AverageIntegrationWindow.size();g2++) {
+  	gr2->SetPoint(gr2->GetN(),ChannelVector[g2],AverageIntegrationWindow[g2]);
+  }
+  gr2->Draw("AB");
+  gPad->SetGrid(1,1);
+  gPad->Update();
+  TString AVgGraph = "/home/dhruvanshu/ldmx-sw/IntegrationStartSamplesAllChannels.png";
+  c3->Print(AVgGraph);
   return;
 }
 
