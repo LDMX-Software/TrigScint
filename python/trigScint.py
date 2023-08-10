@@ -117,7 +117,27 @@ class EventReadoutProducer(ldmxcfg.Producer) :
         self.time_shift=5
         self.fiber_to_shift=0
         self.verbose = False
-        
+
+class dataShaper(ldmxcfg.Producer) :
+    """Configuration for dataShaper producer for Trigger Scintillators"""
+    def __init__(self,name) :
+        super().__init__(name,'trigscint::dataShaper','TrigScint')
+
+        self.max_cluster_width = 2
+        self.clustering_threshold = 40.  #to add in neighboring channels
+        self.seed_threshold = 60.
+        self.pad_time = -999.
+        self.time_tolerance = 50.
+        self.input_collection3 = "trigScintRecHitsPad1"#"testBeamHitsUp"#"TriggerPadUpDigiHits"#"testBeamHitsUp"
+        self.input_collection2 = "trigScintQIEDigisPad1"#"TriggerPad1QDigiHits"#"decodedQIEUp"
+        self.input_collection = "TriggerPad1Clusters"#"TestBeamClustersUp"
+        self.input_pass_name = "sim"
+        self.input_pass_name2 = "sim"
+        self.input_pass_name3 = "hits"#"sim"
+        self.output_collection = "TestBeamShapeUp"
+        #whether to apply quality criteria from hit reconstruction
+        self.verbosity = 0 
+
 class TestBeamHitProducer(ldmxcfg.Producer) :
     """Configuration for testbeam hit producer for Trigger Scintillators"""
 
