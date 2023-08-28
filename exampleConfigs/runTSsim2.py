@@ -92,7 +92,7 @@ from LDMX.TrigScint.trigScint import TrigScintClusterProducer
 
 tsDigis = TrigScintQIEDigiProducer.pad1()
 #tsDigis.randomSeed(NUM)
-tsDigis.number_of_strips = 2
+tsDigis.number_of_strips = 12
 tsDigis.input_collection = "TriggerPadUpSimHits"
 tsDigis.mean_noise=float(noisePerEvent/nTimeSamples)
 tsDigis.maxts = nTimeSamples
@@ -125,7 +125,7 @@ tsEv.input_pass_name=thisPassName
 tsEv.input_collection=tsDigis.output_collection
 tsEv.time_shift=0 #timeOffset
 
-nChannels=2
+nChannels=12
 gainList=[tsDigis.sipm_gain]*nChannels
 pedList=[tsDigis.pedestal]*nChannels
 
