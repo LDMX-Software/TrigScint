@@ -1,3 +1,5 @@
+#Python config file used to run ChargeAnalyzerCrazy.cxx which plots the charge vs timesamples based on hit flags for a particular event of a run. Event number can be passed as an input argument to
+#this script
 import json
 import sys
 from LDMX.Framework import ldmxcfg
