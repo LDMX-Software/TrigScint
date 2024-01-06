@@ -5,22 +5,22 @@ p = ldmxcfg.Process('plot') #
 import sys
 
 #inputPassName="hits"
-nEv=4
+nEv=80000
 
-if len(sys.argv) > 2 :
-    startSample=int(sys.argv[2])
+if len(sys.argv) > 3 :
+    startSample=int(sys.argv[3])
 #else :
     #startSample=12
 
 
 #from LDMX.TrigScint.trigScint import TestBeamHitAnalyzer
-from LDMX.TrigScint.trigScint import TestBeamDecideWidth
+from LDMX.TrigScint.trigScint import TestBeamSearchPeak
 
 
 # ------------------- all set; setup in detail, and run with these settings ---------------
 
 #tsEv=TestBeamHitAnalyzer("plotMaker")
-tsEv=TestBeamDecideWidth("Charge")
+tsEv=TestBeamSearchPeak("Charge")
 tsEv.inputPassName=''
 tsEv.nInstrumentedChannels=12
 # now in default config, too, but with test beam values :
@@ -40,10 +40,10 @@ p.sequence = [
 
 #generate on the fly
 p.inputFiles = [sys.argv[1]]
-outname=sys.argv[1]
-outname=outname.replace(".root", "_width.root")
+outname=sys.argv[2]
+#outname=outname.replace(".root", "_width.root")
 #p.outputFiles = [ outname ]
-
+#p.outputFiles = [sys.argv[2]]
 p.histogramFile = outname #.replace(".root"
 
 p.maxEvents = nEv
