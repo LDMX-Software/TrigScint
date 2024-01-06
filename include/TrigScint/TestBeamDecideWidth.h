@@ -63,39 +63,28 @@ namespace trigscint {
     	int nChannels{16};
     	int nTrkMax{100};
     	int fillNb{0};
-    	int widthlimit = 10;
-    	int maximumpulsewidth = 7;
-	float totChargelimit = 5000.0;    	
-    	std::vector <float> QChan0;
-	std::vector <float> QChan1;
-	std::vector <float> QChan2;
-	std::vector <float> QChan3;
-	std::vector <float> QChan4;
-	std::vector <float> QChan5;
-	std::vector <float> QChan6;
-	std::vector <float> QChan7;
-	std::vector <float> QChan8;
-	std::vector <float> QChan9;
-	std::vector <float> QChan10;
-	std::vector <float> QChan11;
+    	int widthlimit = 10; //This variable controls the different start samples to consider. So it starts with startsample 12, and then loops untill start sample 22
+    	int maximumpulsewidth = 7; //This is the maximum width considered for integration window
+	float totChargelimit = 7000.0;    	//Cutoff for total charge to select events contributing majorly to the MIP region
+	float highchargelimit = 8*totChargelimit;  //Just an upper limit used while plotting charge vs startsample plots
     	
-    	std::vector<std::vector<float>> TotQChan0;
-	std::vector<std::vector<float>> TotQChan1;
-	std::vector<std::vector<float>> TotQChan2;
-	std::vector<std::vector<float>> TotQChan3;
-	std::vector<std::vector<float>> TotQChan4;
-	std::vector<std::vector<float>> TotQChan5;
-	std::vector<std::vector<float>> TotQChan6;
-	std::vector<std::vector<float>> TotQChan7;
-	std::vector<std::vector<float>> TotQChan8;
-	std::vector<std::vector<float>> TotQChan9;
-	std::vector<std::vector<float>> TotQChan10;
-	std::vector<std::vector<float>> TotQChan11;
+    	std::vector<float> TotQChan0;
+	std::vector<float> TotQChan1;
+	std::vector<float> TotQChan2;
+	std::vector<float> TotQChan3;
+	std::vector<float> TotQChan4;  //Charge vectors to store information of total charge subject to different start samples for a given event
+	std::vector<float> TotQChan5;
+	std::vector<float> TotQChan6;
+	std::vector<float> TotQChan7;
+	std::vector<float> TotQChan8;
+	std::vector<float> TotQChan9;
+	std::vector<float> TotQChan10;
+	std::vector<float> TotQChan11;
 
-	std::vector<int> PulseWidth;
+	//std::vector<int> PulseWidth;
 	
-	TH1F* ChannelWidthData[12]; 
-
+	TH1F* ChannelWidthData[12];  //Histogram for startsamples for all channels
+	TH2F* ChargevsStartSample[12]; //2D Histogram for charge vs startsample
 	//TH2F* hTDCfireChanvsEvent;
     double yOffset_{35.};
     double yToIDfactor_{50./80.};
